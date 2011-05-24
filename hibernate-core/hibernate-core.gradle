@@ -64,7 +64,7 @@ task jaxb {
     doLast {
         jaxbTargetDir.mkdirs()
 
-        ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJCTask', classpath: configurations.jaxb.asPath)
+        ant.taskdef(name: 'xjc', classname: 'org.jvnet.jaxb2_commons.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
         ant.jaxbTargetDir = jaxbTargetDir
 
         // hibernate-configuration
@@ -72,26 +72,34 @@ task jaxb {
                 destdir: '${jaxbTargetDir}',
                 package: 'org.hibernate.metamodel.source.hbm.xml.config',
                 binding: 'src/main/xjb/hbm-configuration-bindings.xjb',
-                schema: cfgXsd.path
-        )
+                schema:   cfgXsd.path,
+                extension: 'true'
+        ) {
+            arg line:     '-Xinheritance'
+        }
 
         // hibernate-mapping
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
                 package: 'org.hibernate.metamodel.source.hbm.xml.mapping',
                 binding: 'src/main/xjb/hbm-mapping-bindings.xjb',
-                schema: hbmXsd.path
-        )
+                schema:  hbmXsd.path,
+                extension: 'true'
+        )  {
+            arg line:     '-Xinheritance'
+        }
 
         // orm.xml (jpa)
         ant.xjc(
                 destdir: '${jaxbTargetDir}',
                 package: 'org.hibernate.metamodel.source.annotation.xml',
                 binding: 'src/main/xjb/orm-bindings.xjb',
-                schema: ormXsd.path
-        )
+                schema:  ormXsd.path,
+                extension: 'true'
+        ) {
+            arg line:     '-Xinheritance'
+        }
     }
-
 }
 compileJava.dependsOn jaxb
 
