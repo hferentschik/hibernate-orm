@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2010, Red Hat Inc. or third-party contributors as
+ * Copyright (c) 2011, Red Hat Inc. or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat Inc.
@@ -21,32 +21,34 @@
  * 51 Franklin Street, Fifth Floor
  * Boston, MA  02110-1301  USA
  */
-package org.hibernate.metamodel.binding;
+package org.hibernate.metamodel.source.binder;
 
-import org.hibernate.id.IdentifierGenerator;
+import org.hibernate.metamodel.source.LocalBindingContext;
 
 /**
- * Binds the entity identifier.
+ * Contract for a container of {@link org.hibernate.metamodel.source.binder.IdentifierSource} references.
  *
- * @author Steve Ebersole
  * @author Hardy Ferentschik
  */
-public interface EntityIdentifier {
+public interface IdentifierSourceContainer {
 	/**
-	 * @return A reference to the entity binding containing this identifier
+	 * Obtain the path used to uniquely identify this container.
+	 *
+	 * @return The unique identifier path
 	 */
-	public EntityBinding getEntityBinding();
+	public String getPath();
 
 	/**
-	 * @return  {@code true} is this identifier is a simple identifier of {@code false} if it
-	 * is a composite identifier
+	 * Obtain this container's id sources.
+	 *
+	 * @return The identifier sources.
 	 */
-	public boolean isSimple();
+	public Iterable<IdentifierSource> identifierSources();
 
 	/**
-	 * @return the identifier generator used to generate/assign values for this identifier
+	 * Obtain the local binding context associated with this container.
+	 *
+	 * @return The local binding context
 	 */
-	public IdentifierGenerator getIdentifierGenerator();
-
-	public SingularAttributeBinding getValueBinding();
+	public LocalBindingContext getLocalBindingContext();
 }

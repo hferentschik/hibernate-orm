@@ -74,7 +74,7 @@ public class PojoEntityTuplizer extends AbstractEntityTuplizer {
 	private final Class mappedClass;
 	private final Class proxyInterface;
 	private final boolean lifecycleImplementor;
-	private final Set lazyPropertyNames = new HashSet();
+	private final Set<String> lazyPropertyNames = new HashSet<String>();
 	private final ReflectionOptimizer optimizer;
 
 	public PojoEntityTuplizer(EntityMetamodel entityMetamodel, PersistentClass mappedEntity) {

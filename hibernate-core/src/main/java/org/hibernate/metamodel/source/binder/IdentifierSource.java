@@ -38,7 +38,7 @@ public interface IdentifierSource {
      */
     IdGenerator getIdentifierGeneratorDescriptor();
 
-    public static enum Nature {
+    public static enum IdentifierNature {
 		/**
 		 * A single, simple identifier.  Equivalent of an {@code <id/>} mapping or a single {@code @Id}
 		 * annotation.  Indicates the {@link IdentifierSource} is castable to {@link SimpleIdentifierSource}.
@@ -63,5 +63,5 @@ public interface IdentifierSource {
 	 *
 	 * @return The identifier source's nature.
 	 */
-	public Nature getNature();
+	public IdentifierNature getIdentifierNature();
 }

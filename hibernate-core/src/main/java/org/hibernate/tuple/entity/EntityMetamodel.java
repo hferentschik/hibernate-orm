@@ -51,8 +51,8 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Property;
 import org.hibernate.mapping.PropertyGeneration;
 import org.hibernate.metamodel.binding.AttributeBinding;
-import org.hibernate.metamodel.binding.BasicAttributeBinding;
 import org.hibernate.metamodel.binding.EntityBinding;
+import org.hibernate.metamodel.binding.SingularAttributeBinding;
 import org.hibernate.metamodel.domain.Attribute;
 import org.hibernate.metamodel.domain.SingularAttribute;
 import org.hibernate.tuple.IdentifierProperty;
@@ -126,8 +126,8 @@ public class EntityMetamodel implements Serializable {
 	private final boolean explicitPolymorphism;
 	private final boolean inherited;
 	private final boolean hasSubclasses;
-	private final Set subclassEntityNames = new HashSet();
-	private final Map entityNameByInheritenceClassMap = new HashMap();
+	private final Set<String> subclassEntityNames = new HashSet<String>();
+	private final Map<Class<?>, String> entityNameByInheritanceClassMap = new HashMap<Class<?>, String>();
 
 	private final EntityMode entityMode;
 	private final EntityTuplizer entityTuplizer;
@@ -152,7 +152,7 @@ public class EntityMetamodel implements Serializable {
 
 		propertySpan = persistentClass.getPropertyClosureSpan();
 		properties = new StandardProperty[propertySpan];
-		List naturalIdNumbers = new ArrayList();
+		List<Integer> naturalIdNumbers = new ArrayList<Integer>();
 		// temporary ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		propertyNames = new String[propertySpan];
 		propertyTypes = new Type[propertySpan];
@@ -280,7 +280,7 @@ public class EntityMetamodel implements Serializable {
 			             ReflectHelper.isAbstractClass( persistentClass.getMappedClass() );
 		}
 		else {
-			isAbstract = persistentClass.isAbstract().booleanValue();
+			isAbstract = persistentClass.isAbstract();
 			if ( !isAbstract && persistentClass.hasPojoRepresentation() &&
 			     ReflectHelper.isAbstractClass( persistentClass.getMappedClass() ) ) {
                 LOG.entityMappedAsNonAbstract(name);
@@ -319,11 +319,11 @@ public class EntityMetamodel implements Serializable {
 		subclassEntityNames.add( name );
 
 		if ( persistentClass.hasPojoRepresentation() ) {
-			entityNameByInheritenceClassMap.put( persistentClass.getMappedClass(), persistentClass.getEntityName() );
+			entityNameByInheritanceClassMap.put( persistentClass.getMappedClass(), persistentClass.getEntityName() );
 			iter = persistentClass.getSubclassIterator();
 			while ( iter.hasNext() ) {
 				final PersistentClass pc = ( PersistentClass ) iter.next();
-				entityNameByInheritenceClassMap.put( pc.getMappedClass(), pc.getEntityName() );
+				entityNameByInheritanceClassMap.put( pc.getMappedClass(), pc.getEntityName() );
 			}
 		}
 
@@ -384,7 +384,7 @@ public class EntityMetamodel implements Serializable {
 		boolean hasLazy = false;
 
 		// TODO: Fix after HHH-6337 is fixed; for now assume entityBinding is the root binding
-		BasicAttributeBinding rootEntityIdentifier = entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding();
+		SingularAttributeBinding rootEntityIdentifier = entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding();
 		// entityBinding.getAttributeClosureSpan() includes the identifier binding;
 		// "properties" here excludes the ID, so subtract 1 if the identifier binding is non-null
 		propertySpan = rootEntityIdentifier == null ?
@@ -527,7 +527,7 @@ public class EntityMetamodel implements Serializable {
 			             ReflectHelper.isAbstractClass( mappedClass );
 		}
 		else {
-			isAbstract = entityBinding.isAbstract().booleanValue();
+			isAbstract = entityBinding.isAbstract();
 			if ( !isAbstract && hasPojoRepresentation &&
 					ReflectHelper.isAbstractClass( mappedClass ) ) {
 				LOG.entityMappedAsNonAbstract(name);
@@ -563,14 +563,14 @@ public class EntityMetamodel implements Serializable {
 		for ( EntityBinding subEntityBinding : entityBinding.getPostOrderSubEntityBindingClosure() ) {
 			subclassEntityNames.add( subEntityBinding.getEntity().getName() );
 			if ( subEntityBinding.getEntity().getClassReference() != null ) {
-				entityNameByInheritenceClassMap.put(
+				entityNameByInheritanceClassMap.put(
 						subEntityBinding.getEntity().getClassReference(),
 						subEntityBinding.getEntity().getName() );
 			}
 		}
 		subclassEntityNames.add( name );
 		if ( mappedClass != null ) {
-			entityNameByInheritenceClassMap.put( mappedClass, name );
+			entityNameByInheritanceClassMap.put( mappedClass, name );
 		}
 
 		entityMode = hasPojoRepresentation ? EntityMode.POJO : EntityMode.MAP;
@@ -867,7 +867,7 @@ public class EntityMetamodel implements Serializable {
 	 * @return The mapped entity-name, or null if no such mapping was found.
 	 */
 	public String findEntityNameByEntityClass(Class inheritenceClass) {
-		return ( String ) entityNameByInheritenceClassMap.get( inheritenceClass );
+		return ( String ) entityNameByInheritanceClassMap.get( inheritenceClass );
 	}
 
 	@Override

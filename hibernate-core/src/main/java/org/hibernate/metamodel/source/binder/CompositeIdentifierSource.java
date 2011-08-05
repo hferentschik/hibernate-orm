@@ -21,17 +21,18 @@
  * 51 Franklin Street, Fifth Floor
  * Boston, MA  02110-1301  USA
  */
-
 package org.hibernate.metamodel.source.binder;
 
+import org.hibernate.internal.util.Value;
+
 /**
- * @author Strong Liu
+ * Contract for composite identifiers
+ *
+ * @author Hardy Ferentschik
  */
-public interface ComponentIdentifierSource extends IdentifierSource {
-    /**
-     * Obtain the source descriptor for the identifier attribute.
-     *
-     * @return The identifier attribute source.
-     */
-    public ComponentAttributeSource getIdentifierAttributeSource();
+public interface CompositeIdentifierSource
+		extends IdentifierSource, SingularAttributeSource, IdentifierSourceContainer {
+	public String getClassName();
+
+	public Value<Class<?>> getClassReference();
 }

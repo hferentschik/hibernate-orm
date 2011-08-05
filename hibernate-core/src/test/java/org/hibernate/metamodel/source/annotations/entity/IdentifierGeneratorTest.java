@@ -42,13 +42,10 @@ import org.hibernate.metamodel.MetadataSources;
 import org.hibernate.metamodel.binding.EntityBinding;
 import org.hibernate.metamodel.binding.EntityIdentifier;
 import org.hibernate.metamodel.source.MappingException;
-import org.hibernate.metamodel.source.internal.IdentifierGeneratorResolver;
 import org.hibernate.service.ServiceRegistryBuilder;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
@@ -66,12 +63,10 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	@Resources(annotatedClasses = NoGenerationEntity.class)
 	public void testNoIdGeneration() {
 		EntityBinding binding = getEntityBinding( NoGenerationEntity.class );
-        EntityIdentifier identifier = binding.getHierarchyDetails().getEntityIdentifier();
-		IdentifierGenerator generator =identifier.getIdentifierGenerator();
-        assertNotNull( generator );
-        assertEquals( "Wrong generator", Assigned.class, generator.getClass() );
-        assertFalse( identifier.isEmbedded() );
-
+		EntityIdentifier identifier = binding.getHierarchyDetails().getEntityIdentifier();
+		IdentifierGenerator generator = identifier.getIdentifierGenerator();
+		assertNotNull( generator );
+		assertEquals( "Wrong generator", Assigned.class, generator.getClass() );
 	}
 
 	@Entity

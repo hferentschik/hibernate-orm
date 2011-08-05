@@ -51,8 +51,8 @@ public class SimpleIdentifierSourceImpl implements SimpleIdentifierSource {
 	}
 
 	@Override
-	public Nature getNature() {
-		return Nature.SIMPLE;
+	public IdentifierNature getIdentifierNature() {
+		return IdentifierNature.SIMPLE;
 	}
 
 	@Override

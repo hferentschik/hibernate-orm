@@ -51,6 +51,7 @@ import org.hibernate.metamodel.binding.IdGenerator;
 import org.hibernate.metamodel.binding.InheritanceType;
 import org.hibernate.metamodel.binding.ManyToOneAttributeBinding;
 import org.hibernate.metamodel.binding.MetaAttribute;
+import org.hibernate.metamodel.binding.SimpleEntityIdentifier;
 import org.hibernate.metamodel.binding.SimpleValueBinding;
 import org.hibernate.metamodel.binding.SingularAttributeBinding;
 import org.hibernate.metamodel.binding.TypeDef;
@@ -308,7 +309,7 @@ public class Binder {
 		if ( entitySource.getIdentifierSource() == null ) {
 			throw new AssertionFailure( "Expecting identifier information on root entity descriptor" );
 		}
-		switch ( entitySource.getIdentifierSource().getNature() ) {
+		switch ( entitySource.getIdentifierSource().getIdentifierNature() ) {
 			case SIMPLE: {
 				bindSimpleIdentifier( (SimpleIdentifierSource) entitySource.getIdentifierSource(), entityBinding );
 				break;
@@ -331,16 +332,17 @@ public class Binder {
 				identifierSource.getIdentifierAttributeSource(), entityBinding
 		);
 
-		entityBinding.getHierarchyDetails().getEntityIdentifier().setValueBinding( idAttributeBinding );
+		SimpleEntityIdentifier entityIdentifier = new SimpleEntityIdentifier( entityBinding );
+		entityIdentifier.setValueBinding( idAttributeBinding );
+
 		IdGenerator generator = identifierSource.getIdentifierGeneratorDescriptor();
 		if ( generator == null ) {
 			Map<String, String> params = new HashMap<String, String>();
 			params.put( IdentifierGenerator.ENTITY_NAME, entityBinding.getEntity().getName() );
 			generator = new IdGenerator( "default_assign_identity_generator", "assigned", params );
 		}
-		entityBinding.getHierarchyDetails()
-				.getEntityIdentifier()
-				.setIdGenerator( generator );
+		entityIdentifier.setIdGenerator( generator );
+		entityBinding.getHierarchyDetails().setEntityIdentifier( entityIdentifier );
 
 		final org.hibernate.metamodel.relational.Value relationalValue = idAttributeBinding.getValue();
 
@@ -1043,9 +1045,9 @@ public class Binder {
 					.propertyToColumnName( attributeBinding.getAttribute().getName() );
 			name = quoteIdentifier( name );
 			Column column = attributeBinding.getContainer()
-									.seekEntityBinding()
-									.getPrimaryTable()
-									.locateOrCreateColumn( name );
+					.seekEntityBinding()
+					.getPrimaryTable()
+					.locateOrCreateColumn( name );
 			column.setNullable( relationalValueSourceContainer.areValuesNullableByDefault() );
 			valueBindings.add(
 					new SimpleValueBinding(

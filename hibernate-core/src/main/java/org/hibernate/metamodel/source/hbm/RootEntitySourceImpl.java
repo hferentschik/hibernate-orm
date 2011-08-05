@@ -23,8 +23,6 @@
  */
 package org.hibernate.metamodel.source.hbm;
 
-import java.util.Iterator;
-
 import org.hibernate.EntityMode;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.engine.OptimisticLockStyle;
@@ -87,8 +85,8 @@ public class RootEntitySourceImpl extends AbstractEntitySourceImpl implements Ro
 				}
 
 				@Override
-				public Nature getNature() {
-					return Nature.SIMPLE;
+				public IdentifierNature getIdentifierNature() {
+					return IdentifierNature.SIMPLE;
 				}
 			};
 		}

@@ -65,7 +65,9 @@ public class SimpleValueBindingTests extends BaseUnitTestCase {
 		attributeBinding.getHibernateTypeDescriptor().setExplicitTypeName( "long" );
 		assertSame( idAttribute, attributeBinding.getAttribute() );
 
-		entityBinding.getHierarchyDetails().getEntityIdentifier().setValueBinding( attributeBinding );
+		SimpleEntityIdentifier entityIdentifier = new SimpleEntityIdentifier( entityBinding );
+		entityIdentifier.setValueBinding( attributeBinding );
+		entityBinding.getHierarchyDetails().setEntityIdentifier(entityIdentifier);
 
 		Column idColumn = table.locateOrCreateColumn( "id" );
 		idColumn.setDatatype( BIGINT );

@@ -27,6 +27,8 @@ import org.hibernate.EntityMode;
 import org.hibernate.engine.OptimisticLockStyle;
 
 /**
+ * Encapsulates the inheritance details for the entity bindings within a class hierarchy
+ *
  * @author Steve Ebersole
  */
 public class HierarchyDetails {
@@ -34,7 +36,7 @@ public class HierarchyDetails {
 	private final InheritanceType inheritanceType;
 	private final EntityMode entityMode;
 
-	private final EntityIdentifier entityIdentifier;
+	private EntityIdentifier entityIdentifier;
 
 	private EntityDiscriminator entityDiscriminator;
 
@@ -49,7 +51,6 @@ public class HierarchyDetails {
 		this.rootEntityBinding = rootEntityBinding;
 		this.inheritanceType = inheritanceType;
 		this.entityMode = entityMode;
-		this.entityIdentifier = new EntityIdentifier( rootEntityBinding );
 	}
 
 	public EntityBinding getRootEntityBinding() {
@@ -66,6 +67,10 @@ public class HierarchyDetails {
 
 	public EntityIdentifier getEntityIdentifier() {
 		return entityIdentifier;
+	}
+
+	public void setEntityIdentifier(EntityIdentifier entityIdentifier) {
+		this.entityIdentifier = entityIdentifier;
 	}
 
 	public EntityDiscriminator getEntityDiscriminator() {
