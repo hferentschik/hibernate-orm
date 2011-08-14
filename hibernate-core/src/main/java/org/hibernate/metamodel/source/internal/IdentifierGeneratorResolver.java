@@ -24,13 +24,18 @@
 package org.hibernate.metamodel.source.internal;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.NamingStrategy;
 import org.hibernate.cfg.ObjectNameNormalizer;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
+import org.hibernate.metamodel.binding.BasicAttributeBinding;
 import org.hibernate.metamodel.binding.EntityBinding;
+import org.hibernate.metamodel.binding.EntityIdentifier;
 import org.hibernate.metamodel.source.MetadataImplementor;
 import org.hibernate.service.config.spi.ConfigurationService;
 
@@ -47,30 +52,37 @@ public class IdentifierGeneratorResolver {
 
 	// IdentifierGeneratorResolver.resolve() must execute after AttributeTypeResolver.resolve()
 	// to ensure that identifier type is resolved.
-	@SuppressWarnings( {"unchecked"} )
-	void resolve() {
+	@SuppressWarnings( { "unchecked" })
+	void resolve(Map<String, IdentifierGenerator> identifierGenerators) {
 		for ( EntityBinding entityBinding : metadata.getEntityBindings() ) {
 			if ( entityBinding.isRoot() ) {
-				Properties properties = new Properties( );
+				Properties properties = new Properties();
 				properties.putAll(
 						metadata.getServiceRegistry()
 								.getService( ConfigurationService.class )
 								.getSettings()
 				);
 				//TODO: where should these be added???
-				if ( ! properties.contains( AvailableSettings.PREFER_POOLED_VALUES_LO ) ) {
+				if ( !properties.contains( AvailableSettings.PREFER_POOLED_VALUES_LO ) ) {
 					properties.put( AvailableSettings.PREFER_POOLED_VALUES_LO, "false" );
 				}
-				if ( ! properties.contains( PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER ) ) {
+				if ( !properties.contains( PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER ) ) {
 					properties.put(
 							PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER,
 							new ObjectNameNormalizerImpl( metadata )
 					);
 				}
-				entityBinding.getHierarchyDetails().getEntityIdentifier().createIdentifierGenerator(
-						metadata.getIdentifierGeneratorFactory(),
-						properties
-				);
+
+				EntityIdentifier entityIdentifier = entityBinding.getHierarchyDetails().getEntityIdentifier();
+				if ( entityIdentifier.getIdGenerator() != null && entityIdentifier.isSimple() ) {
+					IdentifierGenerator identifierGenerator = ( (BasicAttributeBinding) entityIdentifier.getValueBinding() )
+							.createIdentifierGenerator(
+									entityIdentifier.getIdGenerator(),
+									metadata.getIdentifierGeneratorFactory(),
+									properties
+							);
+					identifierGenerators.put( entityBinding.getEntity().getName(), identifierGenerator );
+				}
 			}
 		}
 	}
@@ -79,7 +91,7 @@ public class IdentifierGeneratorResolver {
 		private final boolean useQuotedIdentifiersGlobally;
 		private final NamingStrategy namingStrategy;
 
-		private ObjectNameNormalizerImpl(MetadataImplementor metadata ) {
+		private ObjectNameNormalizerImpl(MetadataImplementor metadata) {
 			this.useQuotedIdentifiersGlobally = metadata.isGloballyQuotedIdentifiers();
 			this.namingStrategy = metadata.getNamingStrategy();
 		}

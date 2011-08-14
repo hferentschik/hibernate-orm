@@ -23,11 +23,7 @@
  */
 package org.hibernate.metamodel.binding;
 
-import java.util.Properties;
-
 import org.hibernate.AssertionFailure;
-import org.hibernate.id.IdentifierGenerator;
-import org.hibernate.id.factory.IdentifierGeneratorFactory;
 
 /**
  * Binds the entity identifier.
@@ -38,7 +34,6 @@ import org.hibernate.id.factory.IdentifierGeneratorFactory;
 public class SimpleEntityIdentifier implements EntityIdentifier {
 	private final EntityBinding entityBinding;
 	private BasicAttributeBinding attributeBinding;
-	private IdentifierGenerator identifierGenerator;
 	private IdGenerator idGenerator;
 	private boolean isIdentifierMapper = false;
 
@@ -71,19 +66,14 @@ public class SimpleEntityIdentifier implements EntityIdentifier {
 		this.idGenerator = idGenerator;
 	}
 
+	@Override
 	public boolean isEmbedded() {
 		return attributeBinding.getSimpleValueSpan() > 1;
 	}
 
+	@Override
 	public boolean isIdentifierMapper() {
 		return isIdentifierMapper;
-	}
-
-	public IdentifierGenerator createIdentifierGenerator(IdentifierGeneratorFactory factory, Properties properties) {
-		if ( idGenerator != null ) {
-			identifierGenerator = attributeBinding.createIdentifierGenerator( idGenerator, factory, properties );
-		}
-		return identifierGenerator;
 	}
 
 	@Override
@@ -97,7 +87,7 @@ public class SimpleEntityIdentifier implements EntityIdentifier {
 	}
 
 	@Override
-	public IdentifierGenerator getIdentifierGenerator() {
-		return identifierGenerator;
+	public IdGenerator getIdGenerator() {
+		return idGenerator;
 	}
 }

@@ -44,6 +44,7 @@ import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.factory.DefaultIdentifierGeneratorFactory;
 import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.internal.CoreMessageLogger;
@@ -51,22 +52,21 @@ import org.hibernate.internal.util.Value;
 import org.hibernate.metamodel.MetadataSourceProcessingOrder;
 import org.hibernate.metamodel.MetadataSources;
 import org.hibernate.metamodel.SessionFactoryBuilder;
-import org.hibernate.metamodel.binding.AbstractPluralAttributeBinding;
+import org.hibernate.metamodel.binding.AttributeBinding;
+import org.hibernate.metamodel.binding.EntityBinding;
+import org.hibernate.metamodel.binding.FetchProfile;
+import org.hibernate.metamodel.binding.IdGenerator;
 import org.hibernate.metamodel.binding.PluralAttributeBinding;
+import org.hibernate.metamodel.binding.TypeDef;
+import org.hibernate.metamodel.domain.BasicType;
+import org.hibernate.metamodel.domain.Type;
+import org.hibernate.metamodel.relational.Database;
 import org.hibernate.metamodel.source.MappingDefaults;
 import org.hibernate.metamodel.source.MetaAttributeContext;
 import org.hibernate.metamodel.source.MetadataImplementor;
 import org.hibernate.metamodel.source.MetadataSourceProcessor;
 import org.hibernate.metamodel.source.annotations.AnnotationMetadataSourceProcessorImpl;
 import org.hibernate.metamodel.source.hbm.HbmMetadataSourceProcessorImpl;
-import org.hibernate.metamodel.binding.AttributeBinding;
-import org.hibernate.metamodel.binding.EntityBinding;
-import org.hibernate.metamodel.binding.FetchProfile;
-import org.hibernate.metamodel.binding.IdGenerator;
-import org.hibernate.metamodel.binding.TypeDef;
-import org.hibernate.metamodel.domain.BasicType;
-import org.hibernate.metamodel.domain.Type;
-import org.hibernate.metamodel.relational.Database;
 import org.hibernate.persister.spi.PersisterClassResolver;
 import org.hibernate.service.BasicServiceRegistry;
 import org.hibernate.service.classloading.spi.ClassLoaderService;
@@ -116,8 +116,9 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 	private Map<String, NamedSQLQueryDefinition> namedNativeQueryDefs = new HashMap<String, NamedSQLQueryDefinition>();
 	private Map<String, ResultSetMappingDefinition> resultSetMappings = new HashMap<String, ResultSetMappingDefinition>();
 	private Map<String, FilterDefinition> filterDefs = new HashMap<String, FilterDefinition>();
+	private Map<String, IdentifierGenerator> identifierGenerators = new HashMap<String, IdentifierGenerator>();
 
-    private boolean globallyQuotedIdentifiers = false;
+	private boolean globallyQuotedIdentifiers = false;
 
 	public MetadataImpl(MetadataSources metadataSources, Options options) {
 		Dialect dialect = metadataSources.getServiceRegistry().getService( JdbcServices.class ).getDialect();
@@ -172,7 +173,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 		new AssociationResolver( this ).resolve();
 		new HibernateTypeResolver( this ).resolve();
 		// IdentifierGeneratorResolver.resolve() must execute after AttributeTypeResolver.resolve()
-		new IdentifierGeneratorResolver( this ).resolve();
+		new IdentifierGeneratorResolver( this ).resolve(identifierGenerators);
 	}
 
 	private void prepare(MetadataSourceProcessor[] metadataSourceProcessors, MetadataSources metadataSources) {
@@ -216,7 +217,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 	@Override
 	public void addFilterDefinition(FilterDefinition def) {
 		if ( def == null || def.getFilterName() == null ) {
-			throw new IllegalArgumentException( "Filter definition object or name is null: "  + def );
+			throw new IllegalArgumentException( "Filter definition object or name is null: " + def );
 		}
 		filterDefs.put( def.getFilterName(), def );
 	}
@@ -240,15 +241,24 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 		}
 		return idGenerators.get( name );
 	}
+
+	@Override
+	public Map<String, IdentifierGenerator> getIdentifierGenerators() {
+		return identifierGenerators;
+	}
+
 	@Override
 	public void registerIdentifierGenerator(String name, String generatorClassName) {
-		 identifierGeneratorFactory.register( name, classLoaderService().classForName( generatorClassName ) );
+		identifierGeneratorFactory.register( name, classLoaderService().classForName( generatorClassName ) );
 	}
 
 	@Override
 	public void addNamedNativeQuery(NamedSQLQueryDefinition def) {
-		if ( def == null || def.getName() == null ) {
-			throw new IllegalArgumentException( "Named native query definition object or name is null: " + def.getQueryString() );
+		if ( def == null ) {
+			throw new IllegalArgumentException( "Named native query definition object cannot be null" );
+		}
+		if ( def.getName() == null ) {
+			throw new IllegalArgumentException( "Named for native query " + def.getQueryString() + " is null" );
 		}
 		namedNativeQueryDefs.put( def.getName(), def );
 	}
@@ -349,7 +359,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 	}
 
 	@Override
-	@SuppressWarnings( {"unchecked"})
+	@SuppressWarnings( { "unchecked" })
 	public <T> Class<T> locateClassByName(String name) {
 		return classLoaderService().classForName( name );
 	}
@@ -469,16 +479,16 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 		return options.getNamingStrategy();
 	}
 
-    @Override
-    public boolean isGloballyQuotedIdentifiers() {
-        return globallyQuotedIdentifiers || getOptions().isGloballyQuotedIdentifiers();
-    }
+	@Override
+	public boolean isGloballyQuotedIdentifiers() {
+		return globallyQuotedIdentifiers || getOptions().isGloballyQuotedIdentifiers();
+	}
 
-    public void setGloballyQuotedIdentifiers(boolean globallyQuotedIdentifiers){
-       this.globallyQuotedIdentifiers = globallyQuotedIdentifiers;
-    }
+	public void setGloballyQuotedIdentifiers(boolean globallyQuotedIdentifiers) {
+		this.globallyQuotedIdentifiers = globallyQuotedIdentifiers;
+	}
 
-    @Override
+	@Override
 	public MappingDefaults getMappingDefaults() {
 		return mappingDefaults;
 	}
@@ -530,7 +540,8 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 	}
 
 	@Override
-	public org.hibernate.type.Type getReferencedPropertyType(String entityName, String propertyName) throws MappingException {
+	public org.hibernate.type.Type getReferencedPropertyType(String entityName, String propertyName)
+			throws MappingException {
 		EntityBinding entityBinding = getEntityBinding( entityName );
 		if ( entityBinding == null ) {
 			throw new MappingException( "Entity binding not known: " + entityName );

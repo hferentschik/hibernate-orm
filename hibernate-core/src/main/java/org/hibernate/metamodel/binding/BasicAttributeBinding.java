@@ -121,7 +121,7 @@ public class BasicAttributeBinding
 		this.metaAttributeContext = metaAttributeContext;
 	}
 
-	IdentifierGenerator createIdentifierGenerator(
+	public IdentifierGenerator createIdentifierGenerator(
 			IdGenerator idGenerator,
 			IdentifierGeneratorFactory identifierGeneratorFactory,
 			Properties properties) {

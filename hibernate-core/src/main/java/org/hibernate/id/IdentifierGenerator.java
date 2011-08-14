@@ -23,7 +23,9 @@
  *
  */
 package org.hibernate.id;
+
 import java.io.Serializable;
+
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 
@@ -47,20 +49,20 @@ import org.hibernate.engine.spi.SessionImplementor;
  */
 public interface IdentifierGenerator {
 
-    /**
-     * The configuration parameter holding the entity name
-     */
-    public static final String ENTITY_NAME = "entity_name";
-    
+	/**
+	 * The configuration parameter holding the entity name
+	 */
+	public static final String ENTITY_NAME = "entity_name";
+
 	/**
 	 * Generate a new identifier.
+	 *
 	 * @param session
 	 * @param object the entity or toplevel collection for which the id is being generated
 	 *
 	 * @return a new identifier
+	 *
 	 * @throws HibernateException
 	 */
-	public Serializable generate(SessionImplementor session, Object object) 
-	throws HibernateException;
-
+	public Serializable generate(SessionImplementor session, Object object) throws HibernateException;
 }

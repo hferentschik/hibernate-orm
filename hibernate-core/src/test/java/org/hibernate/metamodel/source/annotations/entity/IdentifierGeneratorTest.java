@@ -41,6 +41,7 @@ import org.hibernate.id.UUIDHexGenerator;
 import org.hibernate.metamodel.MetadataSources;
 import org.hibernate.metamodel.binding.EntityBinding;
 import org.hibernate.metamodel.binding.EntityIdentifier;
+import org.hibernate.metamodel.binding.IdGenerator;
 import org.hibernate.metamodel.source.MappingException;
 import org.hibernate.service.ServiceRegistryBuilder;
 
@@ -64,9 +65,8 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	public void testNoIdGeneration() {
 		EntityBinding binding = getEntityBinding( NoGenerationEntity.class );
 		EntityIdentifier identifier = binding.getHierarchyDetails().getEntityIdentifier();
-		IdentifierGenerator generator = identifier.getIdentifierGenerator();
-		assertNotNull( generator );
-		assertEquals( "Wrong generator", Assigned.class, generator.getClass() );
+		IdGenerator generator = identifier.getIdGenerator();
+		assertEquals( "Wrong generator", "default_assign_identity_generator", generator.getName() );
 	}
 
 	@Entity
@@ -84,9 +84,8 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	@Resources(annotatedClasses = AutoEntity.class)
 	public void testAutoGenerationType() {
 		EntityBinding binding = getEntityBinding( AutoEntity.class );
-		IdentifierGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdentifierGenerator();
-
-		assertEquals( "Wrong generator", IdentityGenerator.class, generator.getClass() );
+		IdGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdGenerator();
+		assertEquals( "Wrong generator", "native", generator.getStrategy() );
 	}
 
 	@Entity
@@ -104,9 +103,8 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	@Resources(annotatedClasses = TableEntity.class)
 	public void testTableGenerationType() {
 		EntityBinding binding = getEntityBinding( TableEntity.class );
-		IdentifierGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdentifierGenerator();
-
-		assertEquals( "Wrong generator", MultipleHiLoPerTableGenerator.class, generator.getClass() );
+		IdGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdGenerator();
+		assertEquals( "Wrong generator", "org.hibernate.id.MultipleHiLoPerTableGenerator", generator.getStrategy() );
 	}
 
 	@Entity
@@ -124,9 +122,8 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	@Resources(annotatedClasses = SequenceEntity.class)
 	public void testSequenceGenerationType() {
 		EntityBinding binding = getEntityBinding( SequenceEntity.class );
-		IdentifierGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdentifierGenerator();
-
-		assertEquals( "Wrong generator", SequenceHiLoGenerator.class, generator.getClass() );
+		IdGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdGenerator();
+		assertEquals( "Wrong generator", "seqhilo", generator.getStrategy() );
 	}
 
 
@@ -170,9 +167,8 @@ public class IdentifierGeneratorTest extends BaseAnnotationBindingTestCase {
 	@Resources(annotatedClasses = NamedGeneratorEntity2.class)
 	public void testNamedGenerator() {
 		EntityBinding binding = getEntityBinding( NamedGeneratorEntity2.class );
-		IdentifierGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdentifierGenerator();
-
-		assertEquals( "Wrong generator", UUIDHexGenerator.class, generator.getClass() );
+		IdGenerator generator = binding.getHierarchyDetails().getEntityIdentifier().getIdGenerator();
+		assertEquals( "Wrong generator", "uuid", generator.getStrategy() );
 	}
 }
 

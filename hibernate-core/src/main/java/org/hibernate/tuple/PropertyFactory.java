@@ -40,6 +40,7 @@ import org.hibernate.metamodel.binding.AttributeBinding;
 import org.hibernate.metamodel.binding.EntityBinding;
 import org.hibernate.metamodel.binding.AbstractPluralAttributeBinding;
 import org.hibernate.metamodel.binding.BasicAttributeBinding;
+import org.hibernate.metamodel.binding.EntityIdentifier;
 import org.hibernate.metamodel.binding.SimpleValueBinding;
 import org.hibernate.metamodel.binding.SingularAttributeBinding;
 import org.hibernate.property.Getter;
@@ -70,7 +71,7 @@ public class PropertyFactory {
 		String mappedUnsavedValue = mappedEntity.getIdentifier().getNullValue();
 		Type type = mappedEntity.getIdentifier().getType();
 		Property property = mappedEntity.getIdentifierProperty();
-		
+
 		IdentifierValue unsavedValue = UnsavedValueFactory.getUnsavedIdentifierValue(
 				mappedUnsavedValue,
 				getGetter( property ),
@@ -109,13 +110,18 @@ public class PropertyFactory {
 	 */
 	public static IdentifierProperty buildIdentifierProperty(EntityBinding mappedEntity, IdentifierGenerator generator) {
 
-		final SingularAttributeBinding property = mappedEntity.getHierarchyDetails().getEntityIdentifier().getValueBinding();
+		final EntityIdentifier entityIdentifier = mappedEntity.getHierarchyDetails().getEntityIdentifier();
+		final SingularAttributeBinding property = entityIdentifier.getValueBinding();
 
 		// TODO: the following will cause an NPE with "virtual" IDs; how should they be set?
 		// (steve) virtual attributes will still be attributes, they will simply be marked as virtual.
 		//		see org.hibernate.metamodel.domain.AbstractAttributeContainer.locateOrCreateVirtualAttribute()
 
-		final String mappedUnsavedValue = property.getUnsavedValue();
+		String mappedUnsavedValue = null;
+		if(entityIdentifier.isSimple()) {
+			mappedUnsavedValue = ((BasicAttributeBinding)property).getUnsavedValue();
+		}
+
 		final Type type = property.getHibernateTypeDescriptor().getResolvedTypeMapping();
 
 		IdentifierValue unsavedValue = UnsavedValueFactory.getUnsavedIdentifierValue(
@@ -157,7 +163,7 @@ public class PropertyFactory {
 	 */
 	public static VersionProperty buildVersionProperty(Property property, boolean lazyAvailable) {
 		String mappedUnsavedValue = ( (KeyValue) property.getValue() ).getNullValue();
-		
+
 		VersionValue unsavedValue = UnsavedValueFactory.getUnsavedVersionValue(
 				mappedUnsavedValue,
 				getGetter( property ),
@@ -235,18 +241,18 @@ public class PropertyFactory {
 	 * @return The appropriate StandardProperty definition.
 	 */
 	public static StandardProperty buildStandardProperty(Property property, boolean lazyAvailable) {
-		
+
 		final Type type = property.getValue().getType();
-		
+
 		// we need to dirty check collections, since they can cause an owner
 		// version number increment
-		
+
 		// we need to dirty check many-to-ones with not-found="ignore" in order 
 		// to update the cache (not the database), since in this case a null
 		// entity reference can lose information
-		
-		boolean alwaysDirtyCheck = type.isAssociationType() && 
-				( (AssociationType) type ).isAlwaysDirtyChecked(); 
+
+		boolean alwaysDirtyCheck = type.isAssociationType() &&
+				( (AssociationType) type ).isAlwaysDirtyChecked();
 
 		return new StandardProperty(
 				property.getName(),

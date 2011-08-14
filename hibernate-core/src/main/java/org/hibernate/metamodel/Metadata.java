@@ -34,6 +34,7 @@ import org.hibernate.engine.ResultSetMappingDefinition;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.NamedSQLQueryDefinition;
+import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.metamodel.binding.EntityBinding;
 import org.hibernate.metamodel.binding.FetchProfile;
 import org.hibernate.metamodel.binding.IdGenerator;
@@ -49,12 +50,19 @@ public interface Metadata {
 	 */
 	public static interface Options {
 		public MetadataSourceProcessingOrder getMetadataSourceProcessingOrder();
+
 		public NamingStrategy getNamingStrategy();
+
 		public SharedCacheMode getSharedCacheMode();
+
 		public AccessType getDefaultAccessType();
+
 		public boolean useNewIdentifierGenerators();
-        public boolean isGloballyQuotedIdentifiers();
+
+		public boolean isGloballyQuotedIdentifiers();
+
 		public String getDefaultSchemaName();
+
 		public String getDefaultCatalogName();
 	}
 
@@ -70,7 +78,9 @@ public interface Metadata {
 
 	/**
 	 * Get the "root" entity binding
+	 *
 	 * @param entityName
+	 *
 	 * @return the "root entity binding; simply returns entityBinding if it is the root entity binding
 	 */
 	public EntityBinding getRootEntityBinding(String entityName);
@@ -94,4 +104,6 @@ public interface Metadata {
 	public Iterable<FetchProfile> getFetchProfiles();
 
 	public IdGenerator getIdGenerator(String name);
+
+	public Map<String, IdentifierGenerator> getIdentifierGenerators();
 }

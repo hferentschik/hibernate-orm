@@ -23,8 +23,6 @@
  */
 package org.hibernate.metamodel.binding;
 
-import org.hibernate.id.IdentifierGenerator;
-
 /**
  * Binds the entity identifier.
  *
@@ -38,15 +36,16 @@ public interface EntityIdentifier {
 	public EntityBinding getEntityBinding();
 
 	/**
-	 * @return  {@code true} is this identifier is a simple identifier of {@code false} if it
-	 * is a composite identifier
+	 * @return {@code true} is this identifier is a simple identifier of {@code false} if it
+	 *         is a composite identifier
 	 */
 	public boolean isSimple();
 
-	/**
-	 * @return the identifier generator used to generate/assign values for this identifier
-	 */
-	public IdentifierGenerator getIdentifierGenerator();
+	public IdGenerator getIdGenerator();
 
 	public SingularAttributeBinding getValueBinding();
+
+	public boolean isIdentifierMapper();
+
+	public boolean isEmbedded();
 }

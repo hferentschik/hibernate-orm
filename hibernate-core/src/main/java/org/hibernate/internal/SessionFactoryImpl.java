@@ -597,18 +597,8 @@ public final class SessionFactoryImpl
             integratorObserver.integrators.add(integrator);
         }
 
-
 		//Generators:
-
-		identifierGenerators = new HashMap<String,IdentifierGenerator>();
-		for ( EntityBinding entityBinding : metadata.getEntityBindings() ) {
-			if ( entityBinding.isRoot() ) {
-				identifierGenerators.put(
-						entityBinding.getEntity().getName(),
-						entityBinding.getHierarchyDetails().getEntityIdentifier().getIdentifierGenerator()
-				);
-			}
-		}
+		identifierGenerators = metadata.getIdentifierGenerators();
 
 		///////////////////////////////////////////////////////////////////////
 		// Prepare persisters and link them up with their cache
