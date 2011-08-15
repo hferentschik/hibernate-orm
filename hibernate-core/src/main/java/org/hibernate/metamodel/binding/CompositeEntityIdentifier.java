@@ -23,44 +23,53 @@
  */
 package org.hibernate.metamodel.binding;
 
-import org.hibernate.AssertionFailure;
+import org.hibernate.internal.util.Value;
 
 /**
- * Binds the entity identifier.
+ * Binds a composite entity identifier.
  *
- * @author Steve Ebersole
  * @author Hardy Ferentschik
  */
-public class SimpleEntityIdentifier extends AbstractEntityIdentifier {
-	private BasicAttributeBinding attributeBinding;
+public class CompositeEntityIdentifier extends AbstractEntityIdentifier {
+	private ComponentAttributeBinding componentAttributeBinding;
 
 	/**
-	 * Create an identifier
+	 * Create a composite identifier
 	 *
 	 * @param entityBinding the entity binding for which this instance is the id
 	 */
-	public SimpleEntityIdentifier(EntityBinding entityBinding) {
+	public CompositeEntityIdentifier(EntityBinding entityBinding) {
 		super( entityBinding );
 	}
 
-	public BasicAttributeBinding getValueBinding() {
-		return attributeBinding;
-	}
-
-	public void setValueBinding(BasicAttributeBinding attributeBinding) {
-		if ( this.attributeBinding != null ) {
-			throw new AssertionFailure(
-					String.format(
-							"Identifier value binding already existed for %s",
-							getEntityBinding().getEntity().getName()
-					)
-			);
-		}
-		this.attributeBinding = attributeBinding;
+	public void setAttributeBinding(ComponentAttributeBinding componentAttributeBinding) {
+		this.componentAttributeBinding = componentAttributeBinding;
 	}
 
 	@Override
 	public boolean isSimple() {
-		return true;
+		return false;
+	}
+
+	@Override
+	public ComponentAttributeBinding getValueBinding() {
+		return componentAttributeBinding;
+	}
+
+	/**
+	 * @return a value instance of containing the class in which the id attributes are declared
+	 */
+	public Value<Class<?>> getAttributeDeclaringClass() {
+		return null;
+	}
+
+	public boolean isEmbedded() {
+		// TODO
+		return false;
+	}
+
+	public boolean isIdentifierMapper() {
+		// todo
+		return false;
 	}
 }

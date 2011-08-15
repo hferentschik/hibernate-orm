@@ -22,11 +22,12 @@
  * Boston, MA  02110-1301  USA
  */
 package org.hibernate.id;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 
@@ -35,7 +36,7 @@ import org.hibernate.engine.spi.SessionImplementor;
  * need to happen to "fill" the identifier property(s).
  * <p/>
  * This generator is used implicitly for all composite identifier scenarios if an
- * explicit generator is not in place.  So it make sense to discuss the various 
+ * explicit generator is not in place.  So it make sense to discuss the various
  * potential scenarios:<ul>
  * <li>
  * <i>"embedded" composite identifier</i> - this is possible only in HBM mappings
@@ -60,7 +61,8 @@ import org.hibernate.engine.spi.SessionImplementor;
  *
  * @author Steve Ebersole
  */
-public class CompositeNestedGeneratedValueGenerator implements IdentifierGenerator, Serializable, IdentifierGeneratorAggregator {
+public class CompositeNestedGeneratedValueGenerator
+		implements IdentifierGenerator, Serializable, IdentifierGeneratorAggregator {
 	/**
 	 * Contract for declaring how to locate the context for sub-value injection.
 	 */
@@ -101,7 +103,7 @@ public class CompositeNestedGeneratedValueGenerator implements IdentifierGenerat
 	}
 
 	private final GenerationContextLocator generationContextLocator;
-	private List generationPlans = new ArrayList();
+	private List<GenerationPlan> generationPlans = new ArrayList<GenerationPlan>();
 
 	public CompositeNestedGeneratedValueGenerator(GenerationContextLocator generationContextLocator) {
 		this.generationContextLocator = generationContextLocator;
@@ -114,9 +116,7 @@ public class CompositeNestedGeneratedValueGenerator implements IdentifierGenerat
 	public Serializable generate(SessionImplementor session, Object object) throws HibernateException {
 		final Serializable context = generationContextLocator.locateGenerationContext( session, object );
 
-		Iterator itr = generationPlans.iterator();
-		while ( itr.hasNext() ) {
-			final GenerationPlan plan = (GenerationPlan) itr.next();
+		for ( GenerationPlan plan : generationPlans ) {
 			plan.execute( session, object, context );
 		}
 
@@ -127,9 +127,7 @@ public class CompositeNestedGeneratedValueGenerator implements IdentifierGenerat
 	 * {@inheritDoc}
 	 */
 	public void registerPersistentGenerators(Map generatorMap) {
-		final Iterator itr = generationPlans.iterator();
-		while ( itr.hasNext() ) {
-			final GenerationPlan plan = (GenerationPlan) itr.next();
+		for ( GenerationPlan plan : generationPlans ) {
 			plan.registerPersistentGenerators( generatorMap );
 		}
 	}

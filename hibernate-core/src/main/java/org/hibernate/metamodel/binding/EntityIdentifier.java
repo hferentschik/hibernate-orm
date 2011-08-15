@@ -44,8 +44,4 @@ public interface EntityIdentifier {
 	public IdGenerator getIdGenerator();
 
 	public SingularAttributeBinding getValueBinding();
-
-	public boolean isIdentifierMapper();
-
-	public boolean isEmbedded();
 }

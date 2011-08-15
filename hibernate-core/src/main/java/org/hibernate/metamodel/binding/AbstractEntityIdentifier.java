@@ -31,36 +31,30 @@ import org.hibernate.AssertionFailure;
  * @author Steve Ebersole
  * @author Hardy Ferentschik
  */
-public class SimpleEntityIdentifier extends AbstractEntityIdentifier {
-	private BasicAttributeBinding attributeBinding;
+public abstract class AbstractEntityIdentifier implements EntityIdentifier {
+	private final EntityBinding entityBinding;
+	private IdGenerator idGenerator;
 
 	/**
 	 * Create an identifier
 	 *
 	 * @param entityBinding the entity binding for which this instance is the id
 	 */
-	public SimpleEntityIdentifier(EntityBinding entityBinding) {
-		super( entityBinding );
-	}
-
-	public BasicAttributeBinding getValueBinding() {
-		return attributeBinding;
-	}
-
-	public void setValueBinding(BasicAttributeBinding attributeBinding) {
-		if ( this.attributeBinding != null ) {
-			throw new AssertionFailure(
-					String.format(
-							"Identifier value binding already existed for %s",
-							getEntityBinding().getEntity().getName()
-					)
-			);
-		}
-		this.attributeBinding = attributeBinding;
+	public AbstractEntityIdentifier(EntityBinding entityBinding) {
+		this.entityBinding = entityBinding;
 	}
 
 	@Override
-	public boolean isSimple() {
-		return true;
+	public EntityBinding getEntityBinding() {
+		return entityBinding;
+	}
+
+	public void setIdGenerator(IdGenerator idGenerator) {
+		this.idGenerator = idGenerator;
+	}
+
+	@Override
+	public IdGenerator getIdGenerator() {
+		return idGenerator;
 	}
 }

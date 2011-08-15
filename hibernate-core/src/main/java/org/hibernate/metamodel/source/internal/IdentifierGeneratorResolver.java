@@ -45,7 +45,11 @@ import org.hibernate.metamodel.source.MetadataImplementor;
 import org.hibernate.service.config.spi.ConfigurationService;
 
 /**
+ * This class is responsible to generate the {@link IdentifierGenerator} instances from the {@code IdGenerator} instances
+ * from the metamodel ({@link EntityIdentifier}.
+ *
  * @author Gail Badner
+ * @author Hardy Ferentschik
  */
 public class IdentifierGeneratorResolver {
 
@@ -81,9 +85,9 @@ public class IdentifierGeneratorResolver {
 			}
 
 			EntityIdentifier entityIdentifier = entityBinding.getHierarchyDetails().getEntityIdentifier();
-			if ( entityIdentifier.getIdGenerator() != null && entityIdentifier.isSimple() ) {
+			if ( entityIdentifier.isSimple() ) {
 				BasicAttributeBinding attributeBinding = ( (BasicAttributeBinding) entityIdentifier.getValueBinding() );
-				IdentifierGenerator identifierGenerator = createIdentifierGenerator(
+				IdentifierGenerator identifierGenerator = createSimpleIdentifierGenerator(
 						attributeBinding,
 						entityIdentifier.getIdGenerator(),
 						metadata.getIdentifierGeneratorFactory(),
@@ -94,7 +98,7 @@ public class IdentifierGeneratorResolver {
 		}
 	}
 
-	private IdentifierGenerator createIdentifierGenerator(
+	private IdentifierGenerator createSimpleIdentifierGenerator(
 			BasicAttributeBinding attributeBinding,
 			IdGenerator idGenerator,
 			IdentifierGeneratorFactory identifierGeneratorFactory,
@@ -104,7 +108,7 @@ public class IdentifierGeneratorResolver {
 
 		// use the schema/catalog specified by getValue().getTable() - but note that
 		// if the schema/catalog were specified as params, they will already be initialized and
-		//will override the values set here (they are in idGenerator.getParameters().)
+		// will override the values set here (they are in idGenerator.getParameters())
 		Schema schema = attributeBinding.getValue().getTable().getSchema();
 		if ( schema != null ) {
 			if ( schema.getName().getSchema() != null ) {
@@ -153,21 +157,7 @@ public class IdentifierGeneratorResolver {
 				)
 		);
 
-		// TODO: is this stuff necessary for SimpleValue???
-		//if (rootClass!=null) {
-		//	StringBuffer tables = new StringBuffer();
-		//	Iterator iter = rootClass.getIdentityTables().iterator();
-		//	while ( iter.hasNext() ) {
-		//		Table table= (Table) iter.next();
-		//		tables.append( table.getQuotedName(dialect) );
-		//		if ( iter.hasNext() ) tables.append(", ");
-		//	}
-		//	params.setProperty( PersistentIdentifierGenerator.TABLES, tables.toString() );
-		//}
-		//else {
 		params.setProperty( PersistentIdentifierGenerator.TABLES, tableName );
-		//}
-
 		params.putAll( idGenerator.getParameters() );
 
 		return identifierGeneratorFactory.createIdentifierGenerator(
@@ -176,6 +166,73 @@ public class IdentifierGeneratorResolver {
 				params
 		);
 	}
+
+//	private IdentifierGenerator buildIdentifierGenerator(
+//			IdentifierGeneratorFactory identifierGeneratorFactory,
+//			Dialect dialect,
+//			String defaultCatalog,
+//			String defaultSchema,
+//			RootClass rootClass) throws MappingException {
+//		final boolean hasCustomGenerator = ! DEFAULT_ID_GEN_STRATEGY.equals( getIdentifierGeneratorStrategy() );
+//		if ( hasCustomGenerator ) {
+//			return super.createIdentifierGenerator(
+//					identifierGeneratorFactory, dialect, defaultCatalog, defaultSchema, rootClass
+//			);
+//		}
+//
+//		final Class entityClass = rootClass.getMappedClass();
+//		final Class attributeDeclarer; // what class is the declarer of the composite pk attributes
+//		CompositeNestedGeneratedValueGenerator.GenerationContextLocator locator;
+//
+//		// IMPL NOTE : See the javadoc discussion on CompositeNestedGeneratedValueGenerator wrt the
+//		//		various scenarios for which we need to account here
+//		if ( rootClass.getIdentifierMapper() != null ) {
+//			// we have the @IdClass / <composite-id mapped="true"/> case
+//			attributeDeclarer = resolveComponentClass();
+//		}
+//		else if ( rootClass.getIdentifierProperty() != null ) {
+//			// we have the "@EmbeddedId" / <composite-id name="idName"/> case
+//			attributeDeclarer = resolveComponentClass();
+//		}
+//		else {
+//			// we have the "straight up" embedded (again the hibernate term) component identifier
+//			attributeDeclarer = entityClass;
+//		}
+//
+//		locator = new StandardGenerationContextLocator( rootClass.getEntityName() );
+//		final CompositeNestedGeneratedValueGenerator generator = new CompositeNestedGeneratedValueGenerator( locator );
+//
+//		Iterator itr = getPropertyIterator();
+//		while ( itr.hasNext() ) {
+//			final Property property = (Property) itr.next();
+//			if ( property.getValue().isSimpleValue() ) {
+//				final org.hibernate.mapping.SimpleValue value = (org.hibernate.mapping.SimpleValue) property.getValue();
+//
+//				if ( DEFAULT_ID_GEN_STRATEGY.equals( value.getIdentifierGeneratorStrategy() ) ) {
+//					// skip any 'assigned' generators, they would have been handled by
+//					// the StandardGenerationContextLocator
+//					continue;
+//				}
+//
+//				final IdentifierGenerator valueGenerator = value.createIdentifierGenerator(
+//						identifierGeneratorFactory,
+//						dialect,
+//						defaultCatalog,
+//						defaultSchema,
+//						rootClass
+//				);
+//				generator.addGeneratedValuePlan(
+//						new ValueGenerationPlan(
+//								property.getName(),
+//								valueGenerator,
+//								injector( property, attributeDeclarer )
+//						)
+//				);
+//			}
+//		}
+//		return generator;
+//	}
+
 
 	private static class ObjectNameNormalizerImpl extends ObjectNameNormalizer implements Serializable {
 		private final boolean useQuotedIdentifiersGlobally;

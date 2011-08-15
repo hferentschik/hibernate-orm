@@ -23,7 +23,9 @@
  *
  */
 package org.hibernate.tuple;
+
 import java.io.Serializable;
+
 import org.hibernate.type.Type;
 
 /**
@@ -62,9 +64,8 @@ public abstract class Property implements Serializable {
 	public Type getType() {
 		return type;
 	}
-	
+
 	public String toString() {
 		return "Property(" + name + ':' + type.getName() + ')';
 	}
-
 }
