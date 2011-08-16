@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -156,11 +155,11 @@ public abstract class AbstractBasicBindingTests extends BaseUnitTestCase {
 	protected void assertIdAndSimpleProperty(EntityBinding entityBinding) {
 		assertNotNull( entityBinding );
 		assertNotNull( entityBinding.getHierarchyDetails().getEntityIdentifier() );
-		assertNotNull( entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding() );
+		assertNotNull( entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding() );
 
 		AttributeBinding idAttributeBinding = entityBinding.locateAttributeBinding( "id" );
 		assertNotNull( idAttributeBinding );
-		assertSame( idAttributeBinding, entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding() );
+		assertSame( idAttributeBinding, entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding() );
 		assertSame( LongType.INSTANCE, idAttributeBinding.getHibernateTypeDescriptor().getResolvedTypeMapping() );
 
 		assertTrue( idAttributeBinding.getAttribute().isSingular() );

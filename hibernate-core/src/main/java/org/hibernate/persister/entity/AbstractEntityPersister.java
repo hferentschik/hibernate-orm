@@ -790,7 +790,7 @@ public abstract class AbstractEntityPersister
 
 		// IDENTIFIER
 
-		identifierColumnSpan = entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding().getSimpleValueSpan();
+		identifierColumnSpan = entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding().getSimpleValueSpan();
 		rootTableKeyColumnNames = new String[identifierColumnSpan];
 		rootTableKeyColumnReaders = new String[identifierColumnSpan];
 		rootTableKeyColumnReaderTemplates = new String[identifierColumnSpan];
@@ -861,7 +861,7 @@ public abstract class AbstractEntityPersister
 		i = 0;
 		boolean foundFormula = false;
 		for ( AttributeBinding attributeBinding : entityBinding.getAttributeBindingClosure() ) {
-			if ( attributeBinding == entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding() ) {
+			if ( attributeBinding == entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding() ) {
 				// entity identifier is not considered a "normal" property
 				continue;
 			}
@@ -965,7 +965,7 @@ public abstract class AbstractEntityPersister
 		List<Boolean> propNullables = new ArrayList<Boolean>();
 
 		for ( AttributeBinding attributeBinding : entityBinding.getSubEntityAttributeBindingClosure() ) {
-			if ( attributeBinding == entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding() ) {
+			if ( attributeBinding == entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding() ) {
 				// entity identifier is not considered a "normal" property
 				continue;
 			}

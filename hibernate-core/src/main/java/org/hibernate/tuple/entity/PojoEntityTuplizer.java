@@ -325,7 +325,7 @@ public class PojoEntityTuplizer extends AbstractEntityTuplizer {
 							: ( CompositeType ) entityBinding
 									.getHierarchyDetails()
 									.getEntityIdentifier()
-									.getValueBinding()
+									.getAttributeBinding()
 									.getHibernateTypeDescriptor()
 									.getResolvedTypeMapping()
 			);

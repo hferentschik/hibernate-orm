@@ -43,5 +43,5 @@ public interface EntityIdentifier {
 
 	public IdGenerator getIdGenerator();
 
-	public SingularAttributeBinding getValueBinding();
+	public SingularAttributeBinding getAttributeBinding();
 }

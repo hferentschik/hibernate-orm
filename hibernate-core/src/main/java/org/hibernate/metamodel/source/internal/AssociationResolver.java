@@ -65,7 +65,7 @@ class AssociationResolver {
 		AttributeBinding referencedAttributeBinding =
 				attributeBinding.isPropertyReference() ?
 						entityBinding.locateAttributeBinding( attributeBinding.getReferencedAttributeName() ) :
-						entityBinding.getHierarchyDetails().getEntityIdentifier().getValueBinding();
+						entityBinding.getHierarchyDetails().getEntityIdentifier().getAttributeBinding();
 		if ( referencedAttributeBinding == null ) {
 			// TODO: does attribute name include path w/ entity name?
 			throw new org.hibernate.MappingException(

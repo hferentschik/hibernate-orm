@@ -43,7 +43,7 @@ public class SimpleEntityIdentifier extends AbstractEntityIdentifier {
 		super( entityBinding );
 	}
 
-	public BasicAttributeBinding getValueBinding() {
+	public BasicAttributeBinding getAttributeBinding() {
 		return attributeBinding;
 	}
 

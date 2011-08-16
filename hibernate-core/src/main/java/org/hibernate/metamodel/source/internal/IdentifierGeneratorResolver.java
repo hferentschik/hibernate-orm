@@ -31,13 +31,18 @@ import org.hibernate.MappingException;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.NamingStrategy;
 import org.hibernate.cfg.ObjectNameNormalizer;
+import org.hibernate.id.CompositeNestedGeneratedValueGenerator;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.id.factory.IdentifierGeneratorFactory;
+import org.hibernate.mapping.Component;
 import org.hibernate.metamodel.binding.BasicAttributeBinding;
+import org.hibernate.metamodel.binding.ComponentAttributeBinding;
+import org.hibernate.metamodel.binding.CompositeEntityIdentifier;
 import org.hibernate.metamodel.binding.EntityBinding;
 import org.hibernate.metamodel.binding.EntityIdentifier;
 import org.hibernate.metamodel.binding.IdGenerator;
+import org.hibernate.metamodel.binding.SimpleEntityIdentifier;
 import org.hibernate.metamodel.relational.Column;
 import org.hibernate.metamodel.relational.Schema;
 import org.hibernate.metamodel.relational.SimpleValue;
@@ -66,36 +71,57 @@ public class IdentifierGeneratorResolver {
 				continue;
 			}
 
-			Properties properties = new Properties();
-			properties.putAll(
-					metadata.getServiceRegistry()
-							.getService( ConfigurationService.class )
-							.getSettings()
-			);
-
-			//TODO: where should these be added???
-			if ( !properties.contains( AvailableSettings.PREFER_POOLED_VALUES_LO ) ) {
-				properties.put( AvailableSettings.PREFER_POOLED_VALUES_LO, "false" );
-			}
-			if ( !properties.contains( PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER ) ) {
-				properties.put(
-						PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER,
-						new ObjectNameNormalizerImpl( metadata )
-				);
-			}
+			Properties properties = prepareProperties();
 
 			EntityIdentifier entityIdentifier = entityBinding.getHierarchyDetails().getEntityIdentifier();
+			IdentifierGenerator identifierGenerator;
+
 			if ( entityIdentifier.isSimple() ) {
-				BasicAttributeBinding attributeBinding = ( (BasicAttributeBinding) entityIdentifier.getValueBinding() );
-				IdentifierGenerator identifierGenerator = createSimpleIdentifierGenerator(
+				SimpleEntityIdentifier simpleEntityIdentifier = (SimpleEntityIdentifier) entityIdentifier;
+				BasicAttributeBinding attributeBinding = simpleEntityIdentifier.getAttributeBinding();
+				identifierGenerator = createSimpleIdentifierGenerator(
 						attributeBinding,
 						entityIdentifier.getIdGenerator(),
 						metadata.getIdentifierGeneratorFactory(),
 						properties
 				);
-				identifierGenerators.put( entityBinding.getEntity().getName(), identifierGenerator );
+
 			}
+			else {
+				CompositeEntityIdentifier compositeEntityIdentifier = (CompositeEntityIdentifier) entityIdentifier;
+				identifierGenerator = createCompositeIdentifierGenerator(
+						entityBinding,
+						compositeEntityIdentifier,
+						metadata.getIdentifierGeneratorFactory(),
+						properties
+				);
+			}
+			identifierGenerators.put( entityBinding.getEntity().getName(), identifierGenerator );
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private Properties prepareProperties() {
+		Properties properties = new Properties();
+		// add all properties from the configuration
+		properties.putAll(
+				metadata.getServiceRegistry()
+						.getService( ConfigurationService.class )
+						.getSettings()
+		);
+
+		// add default values related to identifier generation (if not already set)
+		if ( !properties.contains( AvailableSettings.PREFER_POOLED_VALUES_LO ) ) {
+			properties.put( AvailableSettings.PREFER_POOLED_VALUES_LO, "false" );
+		}
+		if ( !properties.contains( PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER ) ) {
+			properties.put(
+					PersistentIdentifierGenerator.IDENTIFIER_NORMALIZER,
+					new ObjectNameNormalizerImpl( metadata )
+			);
+		}
+
+		return properties;
 	}
 
 	private IdentifierGenerator createSimpleIdentifierGenerator(
@@ -167,41 +193,25 @@ public class IdentifierGeneratorResolver {
 		);
 	}
 
-//	private IdentifierGenerator buildIdentifierGenerator(
-//			IdentifierGeneratorFactory identifierGeneratorFactory,
-//			Dialect dialect,
-//			String defaultCatalog,
-//			String defaultSchema,
-//			RootClass rootClass) throws MappingException {
+	private IdentifierGenerator createCompositeIdentifierGenerator(
+			EntityBinding entityBinding,
+			CompositeEntityIdentifier compositeEntityIdentifier,
+			IdentifierGeneratorFactory identifierGeneratorFactory,
+			Properties properties) throws MappingException {
 //		final boolean hasCustomGenerator = ! DEFAULT_ID_GEN_STRATEGY.equals( getIdentifierGeneratorStrategy() );
 //		if ( hasCustomGenerator ) {
 //			return super.createIdentifierGenerator(
 //					identifierGeneratorFactory, dialect, defaultCatalog, defaultSchema, rootClass
 //			);
 //		}
-//
-//		final Class entityClass = rootClass.getMappedClass();
-//		final Class attributeDeclarer; // what class is the declarer of the composite pk attributes
-//		CompositeNestedGeneratedValueGenerator.GenerationContextLocator locator;
-//
-//		// IMPL NOTE : See the javadoc discussion on CompositeNestedGeneratedValueGenerator wrt the
-//		//		various scenarios for which we need to account here
-//		if ( rootClass.getIdentifierMapper() != null ) {
-//			// we have the @IdClass / <composite-id mapped="true"/> case
-//			attributeDeclarer = resolveComponentClass();
-//		}
-//		else if ( rootClass.getIdentifierProperty() != null ) {
-//			// we have the "@EmbeddedId" / <composite-id name="idName"/> case
-//			attributeDeclarer = resolveComponentClass();
-//		}
-//		else {
-//			// we have the "straight up" embedded (again the hibernate term) component identifier
-//			attributeDeclarer = entityClass;
-//		}
-//
-//		locator = new StandardGenerationContextLocator( rootClass.getEntityName() );
-//		final CompositeNestedGeneratedValueGenerator generator = new CompositeNestedGeneratedValueGenerator( locator );
-//
+
+		// what class is the declarer of the composite pk attributes
+		final Class<?> attributeDeclarer = compositeEntityIdentifier.getAttributeDeclaringClass().getValue();
+		CompositeNestedGeneratedValueGenerator.GenerationContextLocator locator;
+
+		locator = new Component.StandardGenerationContextLocator( entityBinding.getEntity().getName() );
+		final CompositeNestedGeneratedValueGenerator generator = new CompositeNestedGeneratedValueGenerator( locator );
+
 //		Iterator itr = getPropertyIterator();
 //		while ( itr.hasNext() ) {
 //			final Property property = (Property) itr.next();
@@ -230,8 +240,8 @@ public class IdentifierGeneratorResolver {
 //				);
 //			}
 //		}
-//		return generator;
-//	}
+		return null;
+	}
 
 
 	private static class ObjectNameNormalizerImpl extends ObjectNameNormalizer implements Serializable {

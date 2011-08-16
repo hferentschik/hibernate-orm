@@ -52,7 +52,7 @@ public class CompositeEntityIdentifier extends AbstractEntityIdentifier {
 	}
 
 	@Override
-	public ComponentAttributeBinding getValueBinding() {
+	public ComponentAttributeBinding getAttributeBinding() {
 		return componentAttributeBinding;
 	}
 
