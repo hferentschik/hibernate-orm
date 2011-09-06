@@ -47,9 +47,18 @@ import static org.junit.Assert.fail;
 public class DDLWithoutCallbackTest extends BaseCoreFunctionalTestCase {
 	@Test
 	@RequiresDialectFeature(DialectChecks.SupportsColumnCheck.class)
-	public void testListeners() {
+	public void testMaxColumnConstraintApplied() {
 		CupHolder ch = new CupHolder();
 		ch.setRadius( new BigDecimal( "12" ) );
+		assertDatabaseConstraintViolationThrown( ch );
+	}
+
+	@Test
+	@RequiresDialectFeature(DialectChecks.SupportsColumnCheck.class)
+	public void testLengthColumnConstraintApplied() {
+		CupHolder ch = new CupHolder();
+		ch.setRadius( new BigDecimal( "10" ) );
+		ch.setManufacturer( "ExpressoHouse" );
 		assertDatabaseConstraintViolationThrown( ch );
 	}
 

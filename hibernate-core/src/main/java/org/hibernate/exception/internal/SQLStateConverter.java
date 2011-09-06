@@ -73,6 +73,7 @@ public class SQLStateConverter implements SQLExceptionConverter {
 		INTEGRITY_VIOLATION_CATEGORIES.add( "23" );
 		INTEGRITY_VIOLATION_CATEGORIES.add( "27" );
 		INTEGRITY_VIOLATION_CATEGORIES.add( "44" );
+		INTEGRITY_VIOLATION_CATEGORIES.add( "90" ); // H2 uses the 90 category
 
 		CONNECTION_CATEGORIES.add( "08" );
 	}

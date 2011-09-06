@@ -23,12 +23,15 @@
  */
 
 package org.hibernate.test.annotations.beanvalidation;
+
 import java.math.BigDecimal;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
+
+import org.hibernate.validator.constraints.Length;
 
 /**
  * @author Emmanuel Bernard
@@ -39,6 +42,7 @@ public class CupHolder {
 	@GeneratedValue
 	private Integer id;
 	private BigDecimal radius;
+	private String manufacturer;
 
 	public Integer getId() {
 		return id;
@@ -56,5 +60,14 @@ public class CupHolder {
 
 	public void setRadius(BigDecimal radius) {
 		this.radius = radius;
+	}
+
+	@Length(max = 10)
+	public String getManufacturer() {
+		return manufacturer;
+	}
+
+	public void setManufacturer(String manufacturer) {
+		this.manufacturer = manufacturer;
 	}
 }
