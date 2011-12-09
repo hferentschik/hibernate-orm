@@ -41,7 +41,7 @@ import org.hibernate.exception.spi.ViolatedConstraintNameExtracter;
 import org.hibernate.internal.util.JdbcExceptionHelper;
 
 /**
- * A SQLExceptionConverter implementation which performs converion based on
+ * A SQLExceptionConverter implementation which performs conversion based on
  * the underlying SQLState. Interpretation of a SQL error based on SQLState
  * is not nearly as accurate as using the ErrorCode (which is, however, vendor-
  * specific).  Use of a ErrorCode-based converter should be preferred approach
@@ -65,14 +65,15 @@ public class SQLStateConverter implements SQLExceptionConverter {
 		SQL_GRAMMAR_CATEGORIES.add( "65" );
 		SQL_GRAMMAR_CATEGORIES.add( "S0" );
 		SQL_GRAMMAR_CATEGORIES.add( "20" );
-		
-		DATA_CATEGORIES.add("22");
-		DATA_CATEGORIES.add("21");
-		DATA_CATEGORIES.add("02");
+
+		DATA_CATEGORIES.add( "22" );
+		DATA_CATEGORIES.add( "21" );
+		DATA_CATEGORIES.add( "02" );
 
 		INTEGRITY_VIOLATION_CATEGORIES.add( "23" );
 		INTEGRITY_VIOLATION_CATEGORIES.add( "27" );
 		INTEGRITY_VIOLATION_CATEGORIES.add( "44" );
+		INTEGRITY_VIOLATION_CATEGORIES.add( "72" ); // Oracle
 		INTEGRITY_VIOLATION_CATEGORIES.add( "90" ); // H2 uses the 90 category
 
 		CONNECTION_CATEGORIES.add( "08" );
@@ -86,8 +87,9 @@ public class SQLStateConverter implements SQLExceptionConverter {
 	 * Convert the given SQLException into Hibernate's JDBCException hierarchy.
 	 *
 	 * @param sqlException The SQLException to be converted.
-	 * @param message      An optional error message.
-	 * @param sql          Optionally, the sql being performed when the exception occurred.
+	 * @param message An optional error message.
+	 * @param sql Optionally, the sql being performed when the exception occurred.
+	 *
 	 * @return The resulting JDBCException.
 	 */
 	public JDBCException convert(SQLException sqlException, String message, String sql) {
@@ -121,16 +123,16 @@ public class SQLStateConverter implements SQLExceptionConverter {
 				return new LockAcquisitionException( message, sqlException, sql );
 			}
 
-			if ( "40XL1".equals( sqlState ) || "40XL2".equals( sqlState )) {
+			if ( "40XL1".equals( sqlState ) || "40XL2".equals( sqlState ) ) {
 				// Derby "A lock could not be obtained within the time requested."
 				return new PessimisticLockException( message, sqlException, sql );
 			}
 
 			// MySQL Query execution was interrupted
 			if ( "70100".equals( sqlState ) ||
-				// Oracle user requested cancel of current operation
-				  "72000".equals( sqlState ) ) {
-				throw new QueryTimeoutException(  message, sqlException, sql );
+					// Oracle user requested cancel of current operation
+					"72000".equals( sqlState ) ) {
+				throw new QueryTimeoutException( message, sqlException, sql );
 			}
 		}
 
@@ -141,8 +143,9 @@ public class SQLStateConverter implements SQLExceptionConverter {
 	 * Handle an exception not converted to a specific type based on the SQLState.
 	 *
 	 * @param sqlException The exception to be handled.
-	 * @param message      An optional message
-	 * @param sql          Optionally, the sql being performed when the exception occurred.
+	 * @param message An optional message
+	 * @param sql Optionally, the sql being performed when the exception occurred.
+	 *
 	 * @return The converted exception; should <b>never</b> be null.
 	 */
 	protected JDBCException handledNonSpecificException(SQLException sqlException, String message, String sql) {
