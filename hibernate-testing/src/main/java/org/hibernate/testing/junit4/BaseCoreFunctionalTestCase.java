@@ -146,7 +146,7 @@ public abstract class BaseCoreFunctionalTestCase extends BaseUnitTestCase {
 		afterSessionFactoryBuilt();
 	}
 
-	private MetadataImplementor buildMetadata(ServiceRegistry serviceRegistry) {
+	protected MetadataImplementor buildMetadata(ServiceRegistry serviceRegistry) {
 		 	MetadataSources sources = new MetadataSources( serviceRegistry );
 			addMappings( sources );
 			return (MetadataImplementor) sources.buildMetadata();
