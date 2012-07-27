@@ -103,6 +103,7 @@ public class SchemaExport {
 	private ImportSqlCommandExtractor importSqlCommandExtractor = ImportSqlCommandExtractorInitiator.DEFAULT_EXTRACTOR;
 
 	private String outputFile = null;
+	private Exporter customExporter = null;
 	private String delimiter;
 	private boolean haltOnError = false;
 
@@ -239,6 +240,17 @@ public class SchemaExport {
 	}
 
 	/**
+	 * An additional custom exporter
+	 *
+	 * @param exporter a custom exporter
+	 * @return this
+	 */
+	public SchemaExport setCustomExporter(Exporter exporter) {
+		customExporter = exporter;
+		return this;
+	}
+
+	/**
 	 * Set the end of statement delimiter
 	 *
 	 * @param delimiter The delimiter
@@ -362,6 +374,9 @@ public class SchemaExport {
 			}
 			if ( outputFile != null ) {
 				exporters.add( new FileExporter( outputFile ) );
+			}
+			if ( customExporter != null ) {
+				exporters.add( customExporter );
 			}
 			if ( output.doExport() ) {
 				exporters.add( new DatabaseExporter( connectionHelper, sqlExceptionHelper ) );

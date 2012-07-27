@@ -24,10 +24,12 @@
 package org.hibernate.tool.hbm2ddl;
 
 /**
-* @author Steve Ebersole
-*/
-interface Exporter {
+ * @author Steve Ebersole
+ */
+public interface Exporter {
 	public boolean acceptsImportScripts();
+
 	public void export(String string) throws Exception;
+
 	public void release() throws Exception;
 }
