@@ -26,7 +26,7 @@ package org.hibernate.tool.hbm2ddl;
 /**
  * @author Steve Ebersole
  */
-public interface Exporter {
+interface Exporter {
 	public boolean acceptsImportScripts();
 
 	public void export(String string) throws Exception;
