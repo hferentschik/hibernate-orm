@@ -37,12 +37,12 @@ import org.hibernate.metamodel.spi.source.RelationalValueSource;
 /**
  *
  */
-public class ListAttributeIndexSource extends AbstractHbmSourceNode implements PluralAttributeIndexSource {
+public class ListAttributeIndexSourceImpl extends AbstractHbmSourceNode implements PluralAttributeIndexSource {
 	private final List< RelationalValueSource > valueSources;
 	private final ExplicitHibernateTypeSource typeSource;
 	private final int base;
 
-	public ListAttributeIndexSource( MappingDocument sourceMappingDocument, final JaxbListIndexElement indexElement ) {
+	public ListAttributeIndexSourceImpl(MappingDocument sourceMappingDocument, final JaxbListIndexElement indexElement) {
 		super( sourceMappingDocument );
 		valueSources = Helper.buildValueSources( sourceMappingDocument, new Helper.ValueSourcesAdapter() {
 
@@ -83,7 +83,7 @@ public class ListAttributeIndexSource extends AbstractHbmSourceNode implements P
 		base = Integer.parseInt( indexElement.getBase() );
 	}
 
-	public ListAttributeIndexSource( MappingDocument sourceMappingDocument, final JaxbIndexElement indexElement ) {
+	public ListAttributeIndexSourceImpl(MappingDocument sourceMappingDocument, final JaxbIndexElement indexElement) {
 		super( sourceMappingDocument );
 		valueSources = Helper.buildValueSources( sourceMappingDocument, new Helper.ValueSourcesAdapter() {
 
@@ -137,6 +137,7 @@ public class ListAttributeIndexSource extends AbstractHbmSourceNode implements P
 		return false;
 	}
 
+	@Override
 	public int base() {
 		return base;
 	}

@@ -224,7 +224,7 @@ public abstract class AbstractEntitySourceImpl
 											 List<JaxbMapElement> propertyElements){
 		for ( JaxbMapElement element : propertyElements ) {
 			results.add(
-					new MapAttributeSource(
+					new MapAttributeSourceImpl(
 							sourceMappingDocument(),
 							element, this
 					)
@@ -235,7 +235,7 @@ public abstract class AbstractEntitySourceImpl
 											 List<JaxbListElement> propertyElements){
 		for ( JaxbListElement element : propertyElements ) {
 			results.add(
-					new ListAttributeSource(
+					new ListAttributeSourceImpl(
 							sourceMappingDocument(),
 							element, this
 					)

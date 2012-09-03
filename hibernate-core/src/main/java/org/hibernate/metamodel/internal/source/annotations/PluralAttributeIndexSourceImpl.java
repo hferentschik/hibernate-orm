@@ -40,6 +40,11 @@ public class PluralAttributeIndexSourceImpl implements PluralAttributeIndexSourc
 	}
 
 	@Override
+	public int base() {
+		return 0;  //To change body of implemented methods use File | Settings | File Templates.
+	}
+
+	@Override
 	public List<RelationalValueSource> relationalValueSources() {
 		return null;
 	}

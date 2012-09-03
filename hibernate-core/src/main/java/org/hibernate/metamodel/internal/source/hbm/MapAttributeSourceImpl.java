@@ -23,53 +23,49 @@
  */
 package org.hibernate.metamodel.internal.source.hbm;
 
-import org.hibernate.jaxb.spi.hbm.JaxbListElement;
-import org.hibernate.jaxb.spi.hbm.JaxbListIndexElement;
+import org.hibernate.cfg.NotYetImplementedException;
+import org.hibernate.jaxb.spi.hbm.JaxbIndexElement;
+import org.hibernate.jaxb.spi.hbm.JaxbMapElement;
+import org.hibernate.jaxb.spi.hbm.JaxbMapKeyElement;
 import org.hibernate.metamodel.spi.source.AttributeSourceContainer;
 import org.hibernate.metamodel.spi.source.IndexedPluralAttributeSource;
 
-/**
- *
- */
-public class ListAttributeSource extends AbstractPluralAttributeSourceImpl implements IndexedPluralAttributeSource {
+public class MapAttributeSourceImpl extends AbstractPluralAttributeSourceImpl implements IndexedPluralAttributeSource {
 
-	private final ListAttributeIndexSource indexSource;
+	private final MapAttributeIndexSource indexSource;
 
-	/**
-	 * @param sourceMappingDocument
-	 * @param listElement
-	 * @param container
-	 */
-	public ListAttributeSource(
+	public MapAttributeSourceImpl(
 			MappingDocument sourceMappingDocument,
-			JaxbListElement listElement,
-			AttributeSourceContainer container ) {
-		super( sourceMappingDocument, listElement, container );
-		JaxbListIndexElement listIndexElement = listElement.getListIndex();
-		if ( listIndexElement == null ) {
-			this.indexSource = new ListAttributeIndexSource( sourceMappingDocument(), listElement.getIndex() );
-		} else {
-			this.indexSource = new ListAttributeIndexSource( sourceMappingDocument(), listIndexElement );
+			JaxbMapElement mapElement,
+			AttributeSourceContainer container) {
+		super( sourceMappingDocument, mapElement, container );
+		JaxbMapKeyElement mapKey = mapElement.getMapKey();
+		if ( mapKey != null ) {
+			this.indexSource = new MapAttributeIndexSource( sourceMappingDocument, mapKey );
+		}
+		else {
+			JaxbIndexElement indexElement = mapElement.getIndex();
+			if ( indexElement != null ) {
+				this.indexSource = new MapAttributeIndexSource( sourceMappingDocument, indexElement );
+			}
+			throw new NotYetImplementedException(
+					"<map-key-many-to-many>, <composite-map-key>, <index>, <composite-index>, <index-many-to-many>, and <index-many-to-any>"
+			);
 		}
 	}
 
 	@Override
-	public ListAttributeIndexSource getIndexSource() {
+	public MapAttributeIndexSource getIndexSource() {
 		return indexSource;
 	}
 
 	@Override
-	public JaxbListElement getPluralAttributeElement() {
-		return ( JaxbListElement ) super.getPluralAttributeElement();
+	public JaxbMapElement getPluralAttributeElement() {
+		return ( JaxbMapElement ) super.getPluralAttributeElement();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @see org.hibernate.metamodel.spi.source.PluralAttributeSource#getNature()
-	 */
 	@Override
 	public Nature getNature() {
-		return Nature.LIST;
+		return Nature.MAP;
 	}
 }

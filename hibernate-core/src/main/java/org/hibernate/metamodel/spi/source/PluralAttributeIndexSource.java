@@ -23,17 +23,15 @@
  */
 package org.hibernate.metamodel.spi.source;
 
-/**
- *
- */
 public interface PluralAttributeIndexSource extends RelationalValueSourceContainer {
 	Nature getNature();
+
 	ExplicitHibernateTypeSource explicitHibernateTypeSource();
+
+	int base();
 
 	/**
 	 * Describes the nature of the collection indexes as declared by the sources.
-	 *
-	 * @author Steve Ebersole
 	 *
 	 * @see {@link org.hibernate.metamodel.spi.binding.PluralAttributeIndexBinding.Nature}
 	 */

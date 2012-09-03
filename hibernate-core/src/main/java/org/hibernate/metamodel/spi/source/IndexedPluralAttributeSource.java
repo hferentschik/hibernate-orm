@@ -23,10 +23,6 @@
  */
 package org.hibernate.metamodel.spi.source;
 
-/**
- *
- */
 public interface IndexedPluralAttributeSource extends PluralAttributeSource {
-
 	PluralAttributeIndexSource getIndexSource();
 }

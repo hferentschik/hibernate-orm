@@ -52,8 +52,7 @@ import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.ValueHolder;
 import org.hibernate.metamodel.internal.HibernateTypeHelper.ReflectedCollectionJavaTypes;
-import org.hibernate.metamodel.internal.source.hbm.ListAttributeSource;
-import org.hibernate.metamodel.internal.source.hbm.MapAttributeSource;
+import org.hibernate.metamodel.internal.source.hbm.MapAttributeSourceImpl;
 import org.hibernate.metamodel.spi.MetadataImplementor;
 import org.hibernate.metamodel.spi.binding.AbstractPluralAttributeBinding;
 import org.hibernate.metamodel.spi.binding.AttributeBinding;
@@ -1002,7 +1001,7 @@ public class Binder {
 
 	private AbstractPluralAttributeBinding bindListAttribute(
 			final AttributeBindingContainer attributeBindingContainer,
-			final ListAttributeSource attributeSource,
+			final IndexedPluralAttributeSource attributeSource,
 			PluralAttribute attribute ) {
 		if ( attribute == null ) {
 			attribute = attributeBindingContainer.getAttributeContainer().createList( attributeSource.getName() );
@@ -1115,7 +1114,7 @@ public class Binder {
 
 	private AbstractPluralAttributeBinding bindMapAttribute(
 			final AttributeBindingContainer attributeBindingContainer,
-			final MapAttributeSource attributeSource,
+			final MapAttributeSourceImpl attributeSource,
 			PluralAttribute attribute ) {
 		if ( attribute == null ) {
 			attribute = attributeBindingContainer.getAttributeContainer().createMap( attributeSource.getName() );
@@ -1245,25 +1244,25 @@ public class Binder {
 
 	private AbstractPluralAttributeBinding bindPluralAttribute(
 			final AttributeBindingContainer attributeBindingContainer,
-			final PluralAttributeSource attributeSource ) {
-		final PluralAttributeSource.Nature nature = attributeSource.getNature();
+			final PluralAttributeSource pluralAttributeSource ) {
+		final PluralAttributeSource.Nature nature = pluralAttributeSource.getNature();
 		final PluralAttribute attribute =
-				attributeBindingContainer.getAttributeContainer().locatePluralAttribute( attributeSource.getName() );
+				attributeBindingContainer.getAttributeContainer().locatePluralAttribute( pluralAttributeSource.getName() );
 		final AbstractPluralAttributeBinding attributeBinding;
 		final Type resolvedType;
 		switch ( nature ) {
 			case BAG:
-				attributeBinding = bindBagAttribute( attributeBindingContainer, attributeSource, attribute );
+				attributeBinding = bindBagAttribute( attributeBindingContainer, pluralAttributeSource, attribute );
 				resolvedType = resolveBagType( (BagBinding) attributeBinding );
 				break;
 			case SET:
-				attributeBinding = bindSetAttribute( attributeBindingContainer, attributeSource, attribute );
+				attributeBinding = bindSetAttribute( attributeBindingContainer, pluralAttributeSource, attribute );
 				resolvedType = resolveSetType( (SetBinding) attributeBinding );
 				break;
 			case LIST:
 				attributeBinding = bindListAttribute(
 						attributeBindingContainer,
-						(ListAttributeSource) attributeSource,
+						(IndexedPluralAttributeSource) pluralAttributeSource,
 						attribute
 				);
 				resolvedType = resolveListType( (ListBinding) attributeBinding );
@@ -1271,7 +1270,7 @@ public class Binder {
 			case MAP:
 				attributeBinding = bindMapAttribute(
 						attributeBindingContainer,
-						(MapAttributeSource) attributeSource,
+						(MapAttributeSourceImpl ) pluralAttributeSource,
 						attribute
 				);
 				resolvedType = resolveMapType( (MapBinding) attributeBinding );
@@ -1284,36 +1283,36 @@ public class Binder {
 		ReflectedCollectionJavaTypes reflectedCollectionJavaTypes = typeHelper.getReflectedCollectionJavaTypes( attributeBinding );
 		bindHibernateTypeDescriptor(
 				hibernateTypeDescriptor,
-				attributeSource.getTypeInformation(),
-				defaultCollectionJavaTypeName( reflectedCollectionJavaTypes, attributeSource ) );
+				pluralAttributeSource.getTypeInformation(),
+				defaultCollectionJavaTypeName( reflectedCollectionJavaTypes, pluralAttributeSource ) );
 		bindHibernateResolvedType( hibernateTypeDescriptor, resolvedType );
 		// Note: Collection types do not have a relational model
-		attributeBinding.setFetchTiming( attributeSource.getFetchTiming() );
-		attributeBinding.setFetchStyle( attributeSource.getFetchStyle() );
-		attributeBinding.setCaching( attributeSource.getCaching() );
-		if ( StringHelper.isNotEmpty( attributeSource.getCustomPersisterClassName() ) ) {
+		attributeBinding.setFetchTiming( pluralAttributeSource.getFetchTiming() );
+		attributeBinding.setFetchStyle( pluralAttributeSource.getFetchStyle() );
+		attributeBinding.setCaching( pluralAttributeSource.getCaching() );
+		if ( StringHelper.isNotEmpty( pluralAttributeSource.getCustomPersisterClassName() ) ) {
 			attributeBinding.setExplicitPersisterClass( bindingContexts.peek().< CollectionPersister >locateClassByName(
-					attributeSource.getCustomPersisterClassName() ) );
+					pluralAttributeSource.getCustomPersisterClassName() ) );
 		}
-		attributeBinding.setCustomLoaderName( attributeSource.getCustomLoaderName() );
-		attributeBinding.setCustomSqlInsert( attributeSource.getCustomSqlInsert() );
-		attributeBinding.setCustomSqlUpdate( attributeSource.getCustomSqlUpdate() );
-		attributeBinding.setCustomSqlDelete( attributeSource.getCustomSqlDelete() );
-		attributeBinding.setCustomSqlDeleteAll( attributeSource.getCustomSqlDeleteAll() );
-		attributeBinding.setWhere( attributeSource.getWhere() );
+		attributeBinding.setCustomLoaderName( pluralAttributeSource.getCustomLoaderName() );
+		attributeBinding.setCustomSqlInsert( pluralAttributeSource.getCustomSqlInsert() );
+		attributeBinding.setCustomSqlUpdate( pluralAttributeSource.getCustomSqlUpdate() );
+		attributeBinding.setCustomSqlDelete( pluralAttributeSource.getCustomSqlDelete() );
+		attributeBinding.setCustomSqlDeleteAll( pluralAttributeSource.getCustomSqlDeleteAll() );
+		attributeBinding.setWhere( pluralAttributeSource.getWhere() );
 
-		bindSortingAndOrdering( attributeBinding, attributeSource );
+		bindSortingAndOrdering( attributeBinding, pluralAttributeSource );
 
-		if ( attributeSource.getElementSource().getNature() == PluralAttributeElementSource.Nature.BASIC ) {
-			bindBasicCollectionKey( attributeBinding, attributeSource );
+		if ( pluralAttributeSource.getElementSource().getNature() == PluralAttributeElementSource.Nature.BASIC ) {
+			bindBasicCollectionKey( attributeBinding, pluralAttributeSource );
 			bindBasicCollectionElement(
 					( BasicPluralAttributeElementBinding ) attributeBinding.getPluralAttributeElementBinding(),
-					( BasicPluralAttributeElementSource ) attributeSource.getElementSource(),
+					( BasicPluralAttributeElementSource ) pluralAttributeSource.getElementSource(),
 					defaultCollectionElementJavaTypeName( reflectedCollectionJavaTypes ) );
 		}
-		else if ( attributeSource.getElementSource().getNature() == PluralAttributeElementSource.Nature.ONE_TO_MANY ) {
+		else if ( pluralAttributeSource.getElementSource().getNature() == PluralAttributeElementSource.Nature.ONE_TO_MANY ) {
 			final OneToManyPluralAttributeElementSource elementSource =
-					(OneToManyPluralAttributeElementSource) attributeSource.getElementSource();
+					(OneToManyPluralAttributeElementSource) pluralAttributeSource.getElementSource();
 			final String defaultElementJavaTypeName = defaultCollectionElementJavaTypeName( reflectedCollectionJavaTypes );
 			String referencedEntityName =
 					elementSource.getReferencedEntityName() != null ?
@@ -1328,10 +1327,10 @@ public class Binder {
 				);
 			}
 			EntityBinding referencedEntityBinding = entityBinding( referencedEntityName );
- 			bindOneToManyCollectionKey( attributeBinding, attributeSource, referencedEntityBinding );
+ 			bindOneToManyCollectionKey( attributeBinding, pluralAttributeSource, referencedEntityBinding );
 			bindOneToManyCollectionElement(
 					(OneToManyPluralAttributeElementBinding) attributeBinding.getPluralAttributeElementBinding(),
-					(OneToManyPluralAttributeElementSource) attributeSource.getElementSource(),
+					(OneToManyPluralAttributeElementSource) pluralAttributeSource.getElementSource(),
 					referencedEntityBinding,
 					defaultElementJavaTypeName
 			);
@@ -1339,17 +1338,17 @@ public class Binder {
 		else {
 			throw new NotYetImplementedException( String.format(
 					"Support for collection elements of type %s not yet implemented",
-					attributeSource.getElementSource().getNature() ) );
+					pluralAttributeSource.getElementSource().getNature() ) );
 		}
 
-		if ( attributeSource instanceof IndexedPluralAttributeSource ) {
+		if ( pluralAttributeSource instanceof IndexedPluralAttributeSource ) {
 			bindCollectionIndex(
 					( IndexedPluralAttributeBinding ) attributeBinding,
-					( ( IndexedPluralAttributeSource ) attributeSource ).getIndexSource(),
+					( ( IndexedPluralAttributeSource ) pluralAttributeSource ).getIndexSource(),
 					defaultCollectionIndexJavaTypeName( reflectedCollectionJavaTypes ) );
 		}
 
-		bindCollectionTablePrimaryKey( attributeBinding, attributeSource, reflectedCollectionJavaTypes );
+		bindCollectionTablePrimaryKey( attributeBinding, pluralAttributeSource, reflectedCollectionJavaTypes );
 		metadata.addCollection( attributeBinding );
 		return attributeBinding;
 	}

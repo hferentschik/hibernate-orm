@@ -168,6 +168,11 @@ public class MapAttributeIndexSource extends AbstractHbmSourceNode implements Pl
 	}
 
 	@Override
+	public int base() {
+		return 0;  // return 0, not relevant for maps
+	}
+
+	@Override
 	public List<RelationalValueSource> relationalValueSources() {
 		return valueSources;
 	}
