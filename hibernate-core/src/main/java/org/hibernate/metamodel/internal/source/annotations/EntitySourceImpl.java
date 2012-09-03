@@ -239,7 +239,7 @@ public class EntitySourceImpl implements EntitySource {
 				case ONE_TO_MANY:
 					PluralAssociationAttribute pluralAssociationAttribute = ( ( PluralAssociationAttribute ) associationAttribute );
 					AttributeSource source;
-					if ( List.class.isAssignableFrom( pluralAssociationAttribute.getAttributeType() )) {
+					if ( pluralAssociationAttribute.isIndexed() ) {
 						source = new IndexedPluralAttributeSourceImpl( pluralAssociationAttribute );
 					}
 					else {

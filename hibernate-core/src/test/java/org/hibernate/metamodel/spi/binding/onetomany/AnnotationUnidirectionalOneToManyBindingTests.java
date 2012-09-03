@@ -26,7 +26,6 @@ package org.hibernate.metamodel.spi.binding.onetomany;
 import org.junit.Test;
 
 import org.hibernate.metamodel.MetadataSources;
-import org.hibernate.testing.FailureExpectedWithNewMetamodel;
 
 /**
  * @author Hardy Ferentschik
@@ -38,7 +37,6 @@ public class AnnotationUnidirectionalOneToManyBindingTests extends AbstractUnidi
 	}
 
 	@Test
-	@FailureExpectedWithNewMetamodel
 	public void testOneToMany() {
 		super.testOneToMany();
 	}
