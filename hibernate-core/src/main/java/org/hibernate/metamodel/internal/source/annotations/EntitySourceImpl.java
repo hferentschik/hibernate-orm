@@ -215,7 +215,7 @@ public class EntitySourceImpl implements EntitySource {
 		List<AttributeSource> attributeList = new ArrayList<AttributeSource>();
 		for ( BasicAttribute attribute : entityClass.getSimpleAttributes() ) {
 			AttributeOverride override = getEntityClass().getAttributeOverrideMap().get( attribute.getName() );
-			attributeList.add( new SingularAttributeSourceImpl( attribute , override ));
+			attributeList.add( new SingularAttributeSourceImpl( attribute, override ) );
 		}
 
 		for ( EmbeddableClass component : entityClass.getEmbeddedClasses().values() ) {
@@ -237,9 +237,14 @@ public class EntitySourceImpl implements EntitySource {
 				}
 				case MANY_TO_MANY:
 				case ONE_TO_MANY:
-					AttributeSource source = ((PluralAssociationAttribute)associationAttribute).isIndexed() ?
-							new IndexedPluralAttributeSourceImpl((PluralAssociationAttribute)associationAttribute  )
-							:new PluralAttributeSourceImpl( ( PluralAssociationAttribute ) associationAttribute );
+					PluralAssociationAttribute pluralAssociationAttribute = ( ( PluralAssociationAttribute ) associationAttribute );
+					AttributeSource source;
+					if ( List.class.isAssignableFrom( pluralAssociationAttribute.getAttributeType() )) {
+						source = new IndexedPluralAttributeSourceImpl( pluralAssociationAttribute );
+					}
+					else {
+						source = new PluralAttributeSourceImpl( pluralAssociationAttribute );
+					}
 					attributeList.add( source );
 					break;
 				default: {

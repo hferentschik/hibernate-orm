@@ -62,7 +62,7 @@ public class PluralAttributeSourceImpl implements PluralAttributeSource, Orderab
 
 	public PluralAttributeSourceImpl(final PluralAssociationAttribute attribute) {
 		this.attribute = attribute;
-		this.nature = resolveAttributeNature();
+		this.nature = resolvePluralAttributeNature();
 		this.keySource = new PluralAttributeKeySourceImpl( attribute );
 		this.elementSource = determineElementSource();
 		this.typeSource = new ExplicitHibernateTypeSource() {
@@ -78,7 +78,7 @@ public class PluralAttributeSourceImpl implements PluralAttributeSource, Orderab
 		};
 	}
 
-	private Nature resolveAttributeNature() {
+	private Nature resolvePluralAttributeNature() {
 		if ( Map.class.isAssignableFrom( attribute.getAttributeType() ) ) {
 			return PluralAttributeSource.Nature.MAP;
 		}

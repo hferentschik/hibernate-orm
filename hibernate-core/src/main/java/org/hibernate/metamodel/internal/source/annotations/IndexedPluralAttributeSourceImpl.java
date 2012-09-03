@@ -15,13 +15,17 @@ public class IndexedPluralAttributeSourceImpl extends PluralAttributeSourceImpl
 
 	public IndexedPluralAttributeSourceImpl(PluralAssociationAttribute attribute) {
 		super( attribute );
-		if ( getNature() == org.hibernate.metamodel.spi.source.PluralAttributeSource.Nature.SET || getNature() == org.hibernate.metamodel.spi.source.PluralAttributeSource.Nature.MAP ) {
+		if ( getNature() == org.hibernate.metamodel.spi.source.PluralAttributeSource.Nature.SET
+				|| getNature() == org.hibernate.metamodel.spi.source.PluralAttributeSource.Nature.MAP ) {
+			// TODO i18n of exception (HF)
 			throw new MappingException(
 					"Set / Map could not be an indexed column",
 					attribute.getContext().getOrigin()
 			);
 		}
-		if ( attribute.getNature() != MappedAttribute.Nature.MANY_TO_MANY && attribute.getNature() != MappedAttribute.Nature.ONE_TO_MANY ) {
+		if ( attribute.getNature() != MappedAttribute.Nature.MANY_TO_MANY
+				&& attribute.getNature() != MappedAttribute.Nature.ONE_TO_MANY ) {
+			// TODO i18n of exception (HF)
 			throw new MappingException(
 					"Indexed column could be only mapped on the MANY side",
 					attribute.getContext().getOrigin()

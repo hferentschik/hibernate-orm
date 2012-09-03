@@ -81,8 +81,6 @@ public class AssociationAttribute extends MappedAttribute {
 		return new AssociationAttribute( name, attributeType, attributeType, attributeNature, accessType, annotations, context );
 	}
 
-
-
 	AssociationAttribute(
 			String name,
 			Class<?> attributeType,

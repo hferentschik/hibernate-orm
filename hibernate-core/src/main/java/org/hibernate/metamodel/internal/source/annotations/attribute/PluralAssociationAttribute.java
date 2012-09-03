@@ -66,7 +66,6 @@ public class PluralAssociationAttribute extends AssociationAttribute {
 	private final ClassInfo entityClassInfo;
 	private final boolean isExtraLazy;
 	private final OnDeleteAction onDeleteAction;
-	private final boolean isIndexed;
 	// Used for the non-owning side of a ManyToMany relationship
 	private final String inverseForeignKeyName;
 
@@ -140,6 +139,7 @@ public class PluralAssociationAttribute extends AssociationAttribute {
 		sb.append( '}' );
 		return sb.toString();
 	}
+
 	public OnDeleteAction getOnDeleteAction() {
 		return onDeleteAction;
 	}
@@ -150,10 +150,6 @@ public class PluralAssociationAttribute extends AssociationAttribute {
 
 	public boolean isSorted() {
 		return sorted;
-	}
-
-	public boolean isIndexed() {
-		return isIndexed;
 	}
 
 	private PluralAssociationAttribute(ClassInfo entityClassInfo,
@@ -187,7 +183,10 @@ public class PluralAssociationAttribute extends AssociationAttribute {
 		);
 		this.onDeleteAction = determineOnDeleteAction();
 
-		final AnnotationInstance sortAnnotation =  JandexHelper.getSingleAnnotation( annotations, HibernateDotNames.SORT );
+		final AnnotationInstance sortAnnotation = JandexHelper.getSingleAnnotation(
+				annotations,
+				HibernateDotNames.SORT
+		);
 		if ( sortAnnotation == null ) {
 			this.sorted = false;
 			this.comparatorName = null;
@@ -209,11 +208,6 @@ public class PluralAssociationAttribute extends AssociationAttribute {
 				this.comparatorName = null;
 			}
 		}
-
-		AnnotationInstance orderColumnAnnotation =  JandexHelper.getSingleAnnotation( annotations, JPADotNames.ORDER_COLUMN );
-		AnnotationInstance indexColumnAnnotation = JandexHelper.getSingleAnnotation( annotations, HibernateDotNames.INDEX_COLUMN );
-		this.isIndexed = orderColumnAnnotation != null || indexColumnAnnotation != null;
-
 	}
 
 	private OnDeleteAction determineOnDeleteAction() {
