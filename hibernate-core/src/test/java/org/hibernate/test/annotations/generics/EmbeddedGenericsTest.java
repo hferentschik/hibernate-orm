@@ -23,15 +23,14 @@
  */
 package org.hibernate.test.annotations.generics;
 
-import org.junit.Test;
-
 import org.hibernate.Session;
-import org.hibernate.testing.FailureExpectedWithNewMetamodel;
+
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-@FailureExpectedWithNewMetamodel
+//@FailureExpectedWithNewMetamodel
 public class EmbeddedGenericsTest extends BaseCoreFunctionalTestCase {
 	@Test
 	public void testWorksWithGenericEmbedded() {
@@ -76,9 +75,10 @@ public class EmbeddedGenericsTest extends BaseCoreFunctionalTestCase {
 
 	@Override
 	protected Class[] getAnnotatedClasses() {
-		return new Class[]{
+		return new Class[] {
 				Classes.Book.class,
-				Classes.PopularBook.class
+				Classes.PopularBook.class,
+				Classes.Edition.class
 		};
 	}
 }
