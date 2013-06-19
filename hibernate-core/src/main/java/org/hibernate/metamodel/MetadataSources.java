@@ -78,7 +78,7 @@ import org.w3c.dom.Document;
  * @author Brett Meyer
  */
 public class MetadataSources {
-	public static final String UNKOWN_FILE_PATH = "<unknown>";
+	public static final String UNKNOWN_FILE_PATH = "<unknown>";
 	
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class, MetadataSources.class.getName());
@@ -388,7 +388,7 @@ public class MetadataSources {
 	 * Much like {@link #addCacheableFile(File)} except that here we will fail immediately if
 	 * the cache version cannot be found or used for whatever reason
 	 *
-	 * @param xmlFile The xml file, not the bin!
+	 * @param file The xml file, not the bin!
 	 *
 	 * @return The dom "deserialized" from the cached file.
 	 *
@@ -423,7 +423,7 @@ public class MetadataSources {
 	 * @return this (for method chaining purposes)
 	 */
 	public MetadataSources addInputStream(InputStream xmlInputStream) {
-		add( xmlInputStream, new Origin( SourceType.INPUT_STREAM, UNKOWN_FILE_PATH ), false );
+		add( xmlInputStream, new Origin( SourceType.INPUT_STREAM, UNKNOWN_FILE_PATH ), false );
 		return this;
 	}
 
@@ -456,7 +456,7 @@ public class MetadataSources {
 	 * @return this (for method chaining purposes)
 	 */
 	public MetadataSources addDocument(Document document) {
-		final Origin origin = new Origin( SourceType.DOM, UNKOWN_FILE_PATH );
+		final Origin origin = new Origin( SourceType.DOM, UNKNOWN_FILE_PATH );
 		JaxbRoot jaxbRoot = jaxbProcessor.unmarshal( document, origin );
 		addJaxbRoot( jaxbRoot );
 		return this;
@@ -601,26 +601,7 @@ public class MetadataSources {
 		// discovered while processing the annotations. To keep this behavior we index all classes in the
 		// hierarchy (see also HHH-7484)
 		indexClass( clazz.getSuperclass(), indexer, processedClasses );
-		
-		// For backward compatibility, don't require @Embeddable
-		// classes to be explicitly identified.
-		// Automatically find them by checking the fields' types.
-		for ( Class<?> fieldType : ReflectHelper.getFieldTypes( clazz ) ) {		
-			if ( !fieldType.isPrimitive() && fieldType != Object.class ) {
-				try {
-					IndexView fieldIndex = JandexHelper.indexForClass(
-							serviceRegistry.getService( ClassLoaderService.class ),
-							fieldType );
-					if ( !fieldIndex.getAnnotations(
-							JPADotNames.EMBEDDABLE ).isEmpty() ) {
-						indexClass( fieldType, indexer, processedClasses );
-					}
-				} catch ( Exception e ) {
-					// do nothing
-				}
-			}
-		}
-		
+
 		// Also check for classes within a @Target annotation.
 		for ( AnnotationInstance targetAnnotation : JandexHelper.getAnnotations(
 				classInfo, HibernateDotNames.TARGET ) ) {

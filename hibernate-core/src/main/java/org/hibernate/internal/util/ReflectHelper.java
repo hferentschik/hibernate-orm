@@ -30,14 +30,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.TypeVariable;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.MappingException;
 import org.hibernate.PropertyNotFoundException;
+
 import org.hibernate.property.BasicPropertyAccessor;
 import org.hibernate.property.DirectPropertyAccessor;
 import org.hibernate.property.Getter;
@@ -89,7 +86,9 @@ public final class ReflectHelper {
 	 * Encapsulation of getting hold of a class's {@link Object#equals equals}  method.
 	 *
 	 * @param clazz The class from which to extract the equals method.
+	 *
 	 * @return The equals method reference
+	 *
 	 * @throws NoSuchMethodException Should indicate an attempt to extract equals method from interface.
 	 */
 	public static Method extractEqualsMethod(Class<?> clazz) throws NoSuchMethodException {
@@ -100,7 +99,9 @@ public final class ReflectHelper {
 	 * Encapsulation of getting hold of a class's {@link Object#hashCode hashCode} method.
 	 *
 	 * @param clazz The class from which to extract the hashCode method.
+	 *
 	 * @return The hashCode method reference
+	 *
 	 * @throws NoSuchMethodException Should indicate an attempt to extract hashCode method from interface.
 	 */
 	public static Method extractHashCodeMethod(Class<?> clazz) throws NoSuchMethodException {
@@ -111,6 +112,7 @@ public final class ReflectHelper {
 	 * Determine if the given class defines an {@link Object#equals} override.
 	 *
 	 * @param clazz The class to check
+	 *
 	 * @return True if clazz defines an equals override.
 	 */
 	public static boolean overridesEquals(Class clazz) {
@@ -119,7 +121,8 @@ public final class ReflectHelper {
 			equals = extractEqualsMethod( clazz );
 		}
 		catch ( NoSuchMethodException nsme ) {
-			return false; //its an interface so we can't really tell anything...
+			//its an interface so we can't really tell anything...
+			return false;
 		}
 		return !OBJECT_EQUALS.equals( equals );
 	}
@@ -128,6 +131,7 @@ public final class ReflectHelper {
 	 * Determine if the given class defines a {@link Object#hashCode} override.
 	 *
 	 * @param clazz The class to check
+	 *
 	 * @return True if clazz defines an hashCode override.
 	 */
 	public static boolean overridesHashCode(Class clazz) {
@@ -136,7 +140,8 @@ public final class ReflectHelper {
 			hashCode = extractHashCodeMethod( clazz );
 		}
 		catch ( NoSuchMethodException nsme ) {
-			return false; //its an interface so we can't really tell anything...
+			//its an interface so we can't really tell anything...
+			return false;
 		}
 		return !OBJECT_HASHCODE.equals( hashCode );
 	}
@@ -146,6 +151,7 @@ public final class ReflectHelper {
 	 *
 	 * @param clazz The class to check
 	 * @param intf The interface to check it against.
+	 *
 	 * @return True if the class does implement the interface, false otherwise.
 	 */
 	public static boolean implementsInterface(Class clazz, Class<?> intf) {
@@ -161,12 +167,14 @@ public final class ReflectHelper {
 	 *
 	 * @param name The class name
 	 * @param caller The class from which this call originated (in order to access that class's loader).
+	 *
 	 * @return The class reference.
+	 *
 	 * @throws ClassNotFoundException From {@link Class#forName(String, boolean, ClassLoader)}.
 	 */
 	public static Class classForName(String name, Class caller) throws ClassNotFoundException {
 		try {
-			ClassLoader classLoader = ClassLoaderHelper.getContextClassLoader();
+			final ClassLoader classLoader = ClassLoaderHelper.getContextClassLoader();
 			if ( classLoader != null ) {
 				return classLoader.loadClass( name );
 			}
@@ -188,14 +196,16 @@ public final class ReflectHelper {
 	 * {@link Class#forName(String)} if the context classloader lookup is unsuccessful.
 	 *
 	 * @param name The class name
+	 *
 	 * @return The class reference.
+	 *
 	 * @throws ClassNotFoundException From {@link Class#forName(String)}.
 	 */
 	public static Class classForName(String name) throws ClassNotFoundException {
 		try {
-			ClassLoader classLoader = ClassLoaderHelper.getContextClassLoader();
+			final ClassLoader classLoader = ClassLoaderHelper.getContextClassLoader();
 			if ( classLoader != null ) {
-				return classLoader.loadClass(name);
+				return classLoader.loadClass( name );
 			}
 		}
 		catch ( Throwable ignore ) {
@@ -209,6 +219,7 @@ public final class ReflectHelper {
 	 * Short-hand for {@link #isPublic(Class, Member)} passing the member + {@link Member#getDeclaringClass()}
 	 *
 	 * @param member The member to check
+	 *
 	 * @return True if the member is publicly accessible.
 	 */
 	public static boolean isPublic(Member member) {
@@ -220,6 +231,7 @@ public final class ReflectHelper {
 	 *
 	 * @param clazz The class which defines the member
 	 * @param member The memeber.
+	 *
 	 * @return True if the member is publicly accessible, false otherwise.
 	 */
 	public static boolean isPublic(Class clazz, Member member) {
@@ -231,12 +243,14 @@ public final class ReflectHelper {
 	 *
 	 * @param className The name of the class owning the property.
 	 * @param name The name of the property.
+	 *
 	 * @return The type of the property.
+	 *
 	 * @throws MappingException Indicates we were unable to locate the property.
 	 */
 	public static Class reflectedPropertyClass(String className, String name) throws MappingException {
 		try {
-			Class clazz = classForName( className );
+			final Class clazz = classForName( className );
 			return getter( clazz, name ).getReturnType();
 		}
 		catch ( ClassNotFoundException cnfe ) {
@@ -249,7 +263,9 @@ public final class ReflectHelper {
 	 *
 	 * @param clazz The class owning the property.
 	 * @param name The name of the property.
+	 *
 	 * @return The type of the property.
+	 *
 	 * @throws MappingException Indicates we were unable to locate the property.
 	 */
 	public static Class reflectedPropertyClass(Class clazz, String name) throws MappingException {
@@ -270,7 +286,9 @@ public final class ReflectHelper {
 	 *
 	 * @param theClass The class owning the property
 	 * @param name The name of the property
+	 *
 	 * @return The getter.
+	 *
 	 * @throws MappingException Indicates we were unable to locate the property.
 	 */
 	public static Getter getGetter(Class theClass, String name) throws MappingException {
@@ -281,6 +299,7 @@ public final class ReflectHelper {
 	 * Resolve a constant to its actual value.
 	 *
 	 * @param name The name
+	 *
 	 * @return The value
 	 */
 	public static Object getConstantValue(String name) {
@@ -303,7 +322,9 @@ public final class ReflectHelper {
 	 * Retrieve the default (no arg) constructor from the given class.
 	 *
 	 * @param clazz The class for which to retrieve the default ctor.
+	 *
 	 * @return The default constructor.
+	 *
 	 * @throws PropertyNotFoundException Indicates there was not publicly accessible, no-arg constructor (todo : why PropertyNotFoundException???)
 	 */
 	public static Constructor getDefaultConstructor(Class<?> clazz) throws PropertyNotFoundException {
@@ -312,7 +333,7 @@ public final class ReflectHelper {
 		}
 
 		try {
-			Constructor constructor = clazz.getDeclaredConstructor( NO_PARAM_SIGNATURE );
+			final Constructor constructor = clazz.getDeclaredConstructor( NO_PARAM_SIGNATURE );
 			if ( !isPublic( clazz, constructor ) ) {
 				constructor.setAccessible( true );
 			}
@@ -329,17 +350,19 @@ public final class ReflectHelper {
 	 * Determine if the given class is declared abstract.
 	 *
 	 * @param clazz The class to check.
+	 *
 	 * @return True if the class is abstract, false otherwise.
 	 */
 	public static boolean isAbstractClass(Class clazz) {
-		int modifier = clazz.getModifiers();
-		return Modifier.isAbstract(modifier) || Modifier.isInterface(modifier);
+		final int modifier = clazz.getModifiers();
+		return Modifier.isAbstract( modifier ) || Modifier.isInterface( modifier );
 	}
 
 	/**
 	 * Determine is the given class is declared final.
 	 *
 	 * @param clazz The class to check.
+	 *
 	 * @return True if the class is final, flase otherwise.
 	 */
 	public static boolean isFinalClass(Class clazz) {
@@ -352,7 +375,9 @@ public final class ReflectHelper {
 	 *
 	 * @param clazz The class needing instantiation
 	 * @param types The types representing the required ctor param signature
+	 *
 	 * @return The matching constructor.
+	 *
 	 * @throws PropertyNotFoundException Indicates we could not locate an appropriate constructor (todo : again with PropertyNotFoundException???)
 	 */
 	public static Constructor getConstructor(Class clazz, Type[] types) throws PropertyNotFoundException {
@@ -365,7 +390,7 @@ public final class ReflectHelper {
 				for ( int j = 0; j < params.length; j++ ) {
 					final boolean ok = params[j].isAssignableFrom( types[j].getReturnedClass() ) || (
 							types[j] instanceof PrimitiveType &&
-									params[j] == ( ( PrimitiveType ) types[j] ).getPrimitiveClass()
+									params[j] == ( (PrimitiveType) types[j] ).getPrimitiveClass()
 					);
 					if ( !ok ) {
 						found = false;
@@ -382,12 +407,12 @@ public final class ReflectHelper {
 		}
 		throw new PropertyNotFoundException( "no appropriate constructor in class: " + clazz.getName() );
 	}
-	
+
 	public static Method getMethod(Class<?> clazz, Method method) {
 		try {
 			return clazz.getMethod( method.getName(), method.getParameterTypes() );
 		}
-		catch (Exception e) {
+		catch ( Exception e ) {
 			return null;
 		}
 	}
@@ -408,7 +433,7 @@ public final class ReflectHelper {
 		}
 
 		if ( member instanceof Method ) {
-			String methodName = member.getName();
+			final String methodName = member.getName();
 			if ( methodName.startsWith( "is" ) ) {
 				name = Introspector.decapitalize( methodName.substring( 2 ) );
 			}
@@ -434,45 +459,5 @@ public final class ReflectHelper {
 		else {
 			return !Modifier.isTransient( m.getModifiers() ) && !m.isSynthetic();
 		}
-	}
-	
-	/**
-	 * Returns a Set of field types in the given class.  However, for Collection
-	 * and Map fields, the value and key types are returned instead of the
-	 * Iterable class itself.
-	 * 
-	 * @param clazz
-	 * @return Set<Class<?>>
-	 */
-	public static Set<Class<?>> getFieldTypes( Class<?> clazz ) {
-		Set<Class<?>> fieldTypes = new HashSet<Class<?>>();
-
-		for ( Field declaredField : clazz.getDeclaredFields() ) {
-			Class<?> fieldClass = declaredField.getType();
-			if ( fieldClass.isArray() ) {
-				fieldTypes.add( fieldClass.getComponentType() );
-			}
-			else if ( declaredField.getGenericType() instanceof ParameterizedType ) {
-				final java.lang.reflect.Type[] types
-						= ( (ParameterizedType) declaredField.getGenericType() )
-								.getActualTypeArguments();
-				if ( types != null ) {
-					// assumes we want to check values *and* map keys
-					for ( java.lang.reflect.Type type : types ) {
-						if ( type instanceof TypeVariable ) {
-							fieldTypes.add( (Class<?>) ( (TypeVariable) type )
-									.getGenericDeclaration() );
-						}
-						else {
-							fieldTypes.add( (Class<?>) type );
-						}
-					}
-				}
-			}
-			else {
-				fieldTypes.add( fieldClass );
-			}
-		}
-		return fieldTypes;
 	}
 }
