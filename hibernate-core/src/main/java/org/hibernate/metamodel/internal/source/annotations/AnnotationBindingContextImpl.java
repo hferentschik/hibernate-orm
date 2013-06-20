@@ -27,13 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.classmate.MemberResolver;
-import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import com.fasterxml.classmate.TypeResolver;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.cfg.NamingStrategy;
 import org.hibernate.internal.util.ValueHolder;
@@ -43,19 +37,32 @@ import org.hibernate.metamodel.spi.domain.Type;
 import org.hibernate.metamodel.spi.source.IdentifierGeneratorSource;
 import org.hibernate.metamodel.spi.source.MappingDefaults;
 import org.hibernate.service.ServiceRegistry;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 /**
+ * Default implementation of  {@code AnnotationBindingContext}
+ *
+ * @author Hardy Ferentschik
  * @author Steve Ebersole
  */
 public class AnnotationBindingContextImpl implements AnnotationBindingContext {
+	private static final TypeResolver TYPE_RESOLVER = new TypeResolver();
+	private static final MemberResolver MEMBER_RESOLVER = new MemberResolver( TYPE_RESOLVER );
+
 	private final MetadataImplementor metadata;
 	private final ValueHolder<ClassLoaderService> classLoaderService;
 	private final IndexView index;
-	private final TypeResolver typeResolver = new TypeResolver();
-	private final Map<Class<?>, ResolvedType> resolvedTypeCache = new HashMap<Class<?>, ResolvedType>();
 
 	private final IdentifierGeneratorExtractionDelegate identifierGeneratorSourceCreationDelegate;
 
+	/**
+	 * Constructor
+	 *
+	 * @param metadata {@code Metadata} instance
+	 * @param index the Jandex index view
+	 */
 	public AnnotationBindingContextImpl(MetadataImplementor metadata, IndexView index) {
 		this.metadata = metadata;
 		this.classLoaderService = new ValueHolder<ClassLoaderService>(
@@ -81,36 +88,8 @@ public class AnnotationBindingContextImpl implements AnnotationBindingContext {
 
 	@Override
 	public ClassInfo getClassInfo(String name) {
-		DotName dotName = DotName.createSimple( name );
+		final DotName dotName = DotName.createSimple( name );
 		return index.getClassByName( dotName );
-	}
-
-	@Override
-	public void resolveAllTypes(String className) {
-		// the resolved type for the top level class in the hierarchy
-		Class<?> clazz = classLoaderService.getValue().classForName( className );
-		ResolvedType resolvedType = typeResolver.resolve( clazz );
-		while ( resolvedType != null ) {
-			// todo - check whether there is already something in the map
-			resolvedTypeCache.put( clazz, resolvedType );
-			resolvedType = resolvedType.getParentClass();
-			if ( resolvedType != null ) {
-				clazz = resolvedType.getErasedType();
-			}
-		}
-	}
-
-	@Override
-	public ResolvedType getResolvedType(Class<?> clazz) {
-		// todo - error handling
-		return resolvedTypeCache.get( clazz );
-	}
-
-	@Override
-	public ResolvedTypeWithMembers resolveMemberTypes(ResolvedType type) {
-		// todo : is there a reason we create this resolver every time?
-		MemberResolver memberResolver = new MemberResolver( typeResolver );
-		return memberResolver.resolve( type, null, null );
 	}
 
 	@Override
@@ -175,4 +154,13 @@ public class AnnotationBindingContextImpl implements AnnotationBindingContext {
 		return metadata.isGloballyQuotedIdentifiers();
 	}
 
+	@Override
+	public TypeResolver getTypeResolver() {
+		return TYPE_RESOLVER;
+	}
+
+	@Override
+	public MemberResolver getMemberResolver() {
+		return MEMBER_RESOLVER;
+	}
 }

@@ -26,9 +26,11 @@ package org.hibernate.metamodel.internal.source.annotations.entity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.AccessType;
 import javax.persistence.DiscriminatorType;
 
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -79,6 +81,7 @@ public class RootEntityClass extends EntityClass {
 	 * Constructor used for entity roots
 	 *
 	 * @param classInfo the jandex class info this this entity
+	 * @param resolvedTypeWithMembers the resolved generic type information for the class hierarchy
 	 * @param mappedSuperclasses a list of class info instances representing the mapped super classes for this root entity
 	 * @param hierarchyAccessType the default access type
 	 * @param inheritanceType the inheritance type this entity
@@ -88,15 +91,17 @@ public class RootEntityClass extends EntityClass {
 	public RootEntityClass(
 			ClassInfo classInfo,
 			List<ClassInfo> mappedSuperclasses,
+			Map<String, ResolvedTypeWithMembers> resolvedTypeWithMembers,
 			AccessType hierarchyAccessType,
 			InheritanceType inheritanceType,
 			boolean hasSubclasses,
 			AnnotationBindingContext context) {
-		super( classInfo, null, hierarchyAccessType, inheritanceType, context );
+		super( classInfo, resolvedTypeWithMembers.get( classInfo.toString() ), null, hierarchyAccessType, inheritanceType, context );
 		this.mappedSuperclasses = new ArrayList<MappedSuperclass>();
 		for ( ClassInfo mappedSuperclassInfo : mappedSuperclasses ) {
 			final MappedSuperclass configuredClass = new MappedSuperclass(
 					mappedSuperclassInfo,
+					resolvedTypeWithMembers.get( mappedSuperclassInfo.toString() ),
 					null,
 					hierarchyAccessType,
 					context

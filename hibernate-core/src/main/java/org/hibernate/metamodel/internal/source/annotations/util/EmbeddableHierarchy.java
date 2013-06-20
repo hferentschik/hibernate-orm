@@ -21,20 +21,24 @@
  * 51 Franklin Street, Fifth Floor
  * Boston, MA  02110-1301  USA
  */
-package org.hibernate.metamodel.internal.source.annotations.entity;
+package org.hibernate.metamodel.internal.source.annotations.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.AccessType;
 
+import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
+import org.hibernate.metamodel.internal.source.annotations.entity.ConfiguredClass;
+import org.hibernate.metamodel.internal.source.annotations.entity.EmbeddableClass;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
-import org.hibernate.metamodel.internal.source.annotations.util.JPADotNames;
-import org.hibernate.metamodel.internal.source.annotations.util.JandexHelper;
 
 import static org.hibernate.metamodel.spi.binding.SingularAttributeBinding.NaturalIdMutability;
 
@@ -51,7 +55,9 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 	 *
 	 * @param embeddableClass the top level embedded class
 	 * @param propertyName the name of the property in the entity class embedding this embeddable
+	 * @param resolvedType the resolved generic type
 	 * @param accessType the access type inherited from the class in which the embeddable gets embedded
+	 * @param customTuplizerClass custom tuplizer
 	 * @param context the annotation binding context with access to the service registry and the annotation index
 	 *
 	 * @return a set of {@code ConfiguredClassHierarchy}s. One for each "leaf" entity.
@@ -59,6 +65,7 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 	public static EmbeddableHierarchy createEmbeddableHierarchy(
 			final Class<?> embeddableClass,
 			final String propertyName,
+			final ResolvedType resolvedType,
 			final AccessType accessType,
 			final NaturalIdMutability naturalIdMutability,
 			final String customTuplizerClass,
@@ -83,12 +90,12 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 			);
 		}
 
+		Map<String, ResolvedTypeWithMembers> resolvedTypeWithMembers = resolveGenerics(resolvedType, context);
 
-
-		List<ClassInfo> classInfoList = new ArrayList<ClassInfo>();
+		final List<ClassInfo> classInfoList = new ArrayList<ClassInfo>();
 		Class<?> clazz = embeddableClass;
 		while ( clazz != null && !clazz.equals( Object.class ) ) {
-			ClassInfo tmpClassInfo = context.getIndex().getClassByName( DotName.createSimple( clazz.getName() ) );
+			final ClassInfo tmpClassInfo = context.getIndex().getClassByName( DotName.createSimple( clazz.getName() ) );
 			if ( tmpClassInfo == null ) {
 				continue;
 			}
@@ -98,6 +105,7 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 
 		return new EmbeddableHierarchy(
 				classInfoList,
+				resolvedTypeWithMembers,
 				propertyName,
 				naturalIdMutability,
 				customTuplizerClass,
@@ -109,41 +117,49 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 	@SuppressWarnings("unchecked")
 	private EmbeddableHierarchy(
 			final List<ClassInfo> classInfoList,
+			final Map<String, ResolvedTypeWithMembers> resolvedTypeWithMembers,
 			final String propertyName,
 			final NaturalIdMutability naturalIdMutability,
 			final String customTuplizerClass,
 			final AnnotationBindingContext context,
 			final AccessType defaultAccessType) {
 		this.defaultAccessType = defaultAccessType;
-		// the resolved type for the top level class in the hierarchy
-		context.resolveAllTypes( classInfoList.get( classInfoList.size() - 1 ).name().toString() );
 
 		this.embeddables = new ArrayList<EmbeddableClass>();
 		ConfiguredClass parent = null;
-		for ( ClassInfo info : classInfoList ) {
-			EmbeddableClass embeddable = new EmbeddableClass(
-					info, propertyName, parent, defaultAccessType,naturalIdMutability,customTuplizerClass, context
+		for ( ClassInfo classInfo : classInfoList ) {
+			ResolvedTypeWithMembers fullyResolvedType = resolvedTypeWithMembers.get( classInfo.toString() );
+			if(fullyResolvedType == null) {
+				throw new AssertionFailure( "Unable to find resolved type information for " + classInfo.toString() );
+			}
+			final EmbeddableClass embeddable = new EmbeddableClass(
+					classInfo,
+					fullyResolvedType,
+					propertyName,
+					parent,
+					defaultAccessType,
+					naturalIdMutability,
+					customTuplizerClass,
+					context
 			);
 			embeddables.add( embeddable );
 			parent = embeddable;
 		}
 	}
 
-
 	public AccessType getDefaultAccessType() {
 		return defaultAccessType;
 	}
 
-	/**
-	 * @return An iterator iterating in top down manner over the configured classes in this hierarchy.
-	 */
 	@Override
 	public Iterator<EmbeddableClass> iterator() {
 		return embeddables.iterator();
 	}
 
 	/**
-	 * @return Returns the leaf configured class
+	 * Returns the leaf configured class
+	 *
+	 * @return the leaf configured class
 	 */
 	public EmbeddableClass getLeaf() {
 		return embeddables.get( embeddables.size() - 1 );
@@ -157,5 +173,23 @@ public class EmbeddableHierarchy implements Iterable<EmbeddableClass> {
 		sb.append( ", embeddables=" ).append( embeddables );
 		sb.append( '}' );
 		return sb.toString();
+	}
+
+	private static Map<String, ResolvedTypeWithMembers> resolveGenerics(ResolvedType resolvedType, AnnotationBindingContext bindingContext) {
+		final Map<String, ResolvedTypeWithMembers> resolvedTypes = new HashMap<String, ResolvedTypeWithMembers>();
+
+		final Class<?> clazz = bindingContext.locateClassByName( resolvedType.getErasedType().getName() );
+		String className = clazz.getName();
+		while ( resolvedType!= null && !Object.class.equals( resolvedType.getErasedType() ) ) {
+			final ResolvedTypeWithMembers resolvedTypeWithMembers = bindingContext.getMemberResolver().resolve( resolvedType, null, null );
+			resolvedTypes.put( className, resolvedTypeWithMembers );
+
+			resolvedType = resolvedType.getParentClass();
+			if ( resolvedType != null ) {
+				className = resolvedType.getErasedType().getName();
+			}
+		}
+
+		return resolvedTypes;
 	}
 }

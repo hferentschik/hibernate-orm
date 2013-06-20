@@ -25,6 +25,7 @@ package org.hibernate.metamodel.internal.source.annotations.entity;
 
 import javax.persistence.AccessType;
 
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
 import org.jboss.jandex.ClassInfo;
 
@@ -38,16 +39,18 @@ public class MappedSuperclass extends ConfiguredClass {
 	 * Default constructor
 	 *
 	 * @param classInfo the Jandex {@code ClassInfo} for this mapped superclass
+	 * @param fullyResolvedType the resolved generic type information (via classmate)
 	 * @param parent the parent class
 	 * @param defaultAccessType the default access type
 	 * @param context context
 	 */
 	public MappedSuperclass(
 			ClassInfo classInfo,
+			ResolvedTypeWithMembers fullyResolvedType,
 			ConfiguredClass parent,
 			AccessType defaultAccessType,
 			AnnotationBindingContext context) {
-		super( classInfo, defaultAccessType, parent, context );
+		super( classInfo, fullyResolvedType, defaultAccessType, parent, context );
 	}
 }
 

@@ -25,13 +25,13 @@ package org.hibernate.metamodel.internal.source.annotations.entity;
 
 import javax.persistence.AccessType;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
 import org.hibernate.metamodel.internal.source.annotations.util.HibernateDotNames;
 import org.hibernate.metamodel.internal.source.annotations.util.JandexHelper;
 import org.hibernate.metamodel.spi.binding.SingularAttributeBinding;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
 
 /**
  * Represents the information about an entity annotated with {@code @Embeddable}.
@@ -45,15 +45,27 @@ public class EmbeddableClass extends ConfiguredClass {
 	private final String customTuplizerClass;
 	private SingularAttributeBinding.NaturalIdMutability naturalIdMutability;
 
+	/**
+	 * Default constructor
+	 *
+	 * @param classInfo the Jandex {@code ClassInfo} for this mapped superclass
+	 * @param fullyResolvedType the resolved generic type information (via classmate)
+	 * @param embeddedAttributeName the name of the embedded attribute
+	 * @param defaultAccessType the default access type
+	 * @param parent the parent class
+	 * @param customTuplizerClass custom tuplizer
+	 * @param context context
+	 */
 	public EmbeddableClass(
 			ClassInfo classInfo,
+			ResolvedTypeWithMembers fullyResolvedType,
 			String embeddedAttributeName,
 			ConfiguredClass parent,
 			AccessType defaultAccessType,
 			SingularAttributeBinding.NaturalIdMutability naturalIdMutability,
 			String customTuplizerClass,
 			AnnotationBindingContext context) {
-		super( classInfo, defaultAccessType, parent, context );
+		super( classInfo, fullyResolvedType, defaultAccessType, parent, context );
 		this.embeddedAttributeName = embeddedAttributeName;
 		this.naturalIdMutability = naturalIdMutability;
 		this.parentReferencingAttributeName = checkParentAnnotation();
@@ -61,11 +73,11 @@ public class EmbeddableClass extends ConfiguredClass {
 	}
 
 	private String checkParentAnnotation() {
-		AnnotationInstance parentAnnotation = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance parentAnnotation = JandexHelper.getSingleAnnotation(
 				getClassInfo(),
 				HibernateDotNames.PARENT
 		);
-		return parentAnnotation == null? null : JandexHelper.getPropertyName( parentAnnotation.target() );
+		return parentAnnotation == null ? null : JandexHelper.getPropertyName( parentAnnotation.target() );
 	}
 
 	public String getEmbeddedAttributeName() {
@@ -77,7 +89,7 @@ public class EmbeddableClass extends ConfiguredClass {
 	}
 
 	public SingularAttributeBinding.NaturalIdMutability getNaturalIdMutability() {
-		 return naturalIdMutability;
+		return naturalIdMutability;
 	}
 
 	public void setNaturalIdMutability(SingularAttributeBinding.NaturalIdMutability naturalIdMutability) {

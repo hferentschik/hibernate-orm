@@ -37,7 +37,6 @@ import org.junit.Test;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.metamodel.internal.source.annotations.entity.EmbeddableClass;
-import org.hibernate.metamodel.internal.source.annotations.entity.EmbeddableHierarchy;
 import org.hibernate.metamodel.spi.binding.SingularAttributeBinding;
 
 import static junit.framework.Assert.assertEquals;

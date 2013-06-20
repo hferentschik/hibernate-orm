@@ -23,14 +23,13 @@
  */
 package org.hibernate.metamodel.internal.source.annotations;
 
-import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.classmate.ResolvedTypeWithMembers;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.IndexView;
-
+import com.fasterxml.classmate.MemberResolver;
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.metamodel.spi.binding.IdGenerator;
 import org.hibernate.metamodel.spi.source.BindingContext;
 import org.hibernate.metamodel.spi.source.IdentifierGeneratorSource;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.IndexView;
 
 /**
  * Defines an interface for providing additional annotation related context information.
@@ -43,13 +42,11 @@ public interface AnnotationBindingContext extends BindingContext {
 
 	ClassInfo getClassInfo(String name);
 
-	void resolveAllTypes(String className);
-
-	ResolvedType getResolvedType(Class<?> clazz);
-
-	ResolvedTypeWithMembers resolveMemberTypes(ResolvedType type);
-
 	public Iterable<IdentifierGeneratorSource> extractIdentifierGeneratorSources(IdentifierGeneratorSourceContainer container);
 
 	public IdGenerator findIdGenerator(String name);
+
+	TypeResolver getTypeResolver();
+
+	MemberResolver getMemberResolver();
 }

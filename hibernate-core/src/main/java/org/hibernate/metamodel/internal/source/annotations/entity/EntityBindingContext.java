@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.classmate.ResolvedTypeWithMembers;
+import com.fasterxml.classmate.MemberResolver;
+import com.fasterxml.classmate.TypeResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
@@ -193,18 +193,13 @@ public class EntityBindingContext implements LocalBindingContext, AnnotationBind
 	}
 
 	@Override
-	public void resolveAllTypes(String className) {
-		contextDelegate.resolveAllTypes( className );
+	public TypeResolver getTypeResolver() {
+		return contextDelegate.getTypeResolver();
 	}
 
 	@Override
-	public ResolvedType getResolvedType(Class<?> clazz) {
-		return contextDelegate.getResolvedType( clazz );
-	}
-
-	@Override
-	public ResolvedTypeWithMembers resolveMemberTypes(ResolvedType type) {
-		return contextDelegate.resolveMemberTypes( type );
+	public MemberResolver getMemberResolver() {
+		return contextDelegate.getMemberResolver();
 	}
 
 	@Override

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.persistence.AccessType;
 
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -99,19 +100,21 @@ public class EntityClass extends ConfiguredClass {
 	/**
 	 * Constructor used for entities within a hierarchy (non entity roots)
 	 *
-	 * @param classInfo the jandex class info this this entity
-	 * @param parent the parent entity
+	 * @param classInfo the Jandex {@code ClassInfo} for this mapped superclass
+	 * @param fullyResolvedType the resolved generic type information (via classmate)
+	 * @param parent the parent class
 	 * @param hierarchyAccessType the default access type
-	 * @param inheritanceType the inheritance type this entity
-	 * @param context the binding context
+	 * @param inheritanceType inheritance type for this entity hierarchy
+	 * @param context context
 	 */
 	public EntityClass(
 			ClassInfo classInfo,
+			ResolvedTypeWithMembers fullyResolvedType,
 			EntityClass parent,
 			AccessType hierarchyAccessType,
 			InheritanceType inheritanceType,
 			AnnotationBindingContext context) {
-		super( classInfo, hierarchyAccessType, parent, context );
+		super( classInfo, fullyResolvedType, hierarchyAccessType, parent, context );
 		this.inheritanceType = inheritanceType;
 
 		this.explicitEntityName = determineExplicitEntityName();
@@ -140,7 +143,7 @@ public class EntityClass extends ConfiguredClass {
 		processProxyGeneration();
 		processDiscriminatorValue();
 
-		AnnotationInstance foreignKey = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance foreignKey = JandexHelper.getSingleAnnotation(
 				classInfo,
 				HibernateDotNames.FOREIGN_KEY,
 				ClassInfo.class
@@ -149,7 +152,7 @@ public class EntityClass extends ConfiguredClass {
 		if ( foreignKey != null ) {
 			ensureJoinedSubEntity();
 			explicitForeignKeyName = JandexHelper.getValue( foreignKey, "name", String.class );
-			String temp = JandexHelper.getValue( foreignKey, "inverseName", String.class );
+			final String temp = JandexHelper.getValue( foreignKey, "inverseName", String.class );
 			inverseForeignKeyName = StringHelper.isNotEmpty( temp ) ? temp : null;
 		}
 		else {
@@ -328,7 +331,7 @@ public class EntityClass extends ConfiguredClass {
 
 		final List<PrimaryKeyJoinColumn> results;
 		if ( primaryKeyJoinColumns != null ) {
-			AnnotationInstance[] values = primaryKeyJoinColumns.value().asNestedArray();
+			final AnnotationInstance[] values = primaryKeyJoinColumns.value().asNestedArray();
 			results = new ArrayList<PrimaryKeyJoinColumn>( values.length );
 			for ( final AnnotationInstance annotationInstance : values ) {
 				results.add( new PrimaryKeyJoinColumn( annotationInstance ) );

@@ -26,21 +26,19 @@ package org.hibernate.metamodel.internal.source.annotations.util;
 import java.util.Set;
 import javax.persistence.AccessType;
 
-import org.jboss.jandex.Index;
-import org.jboss.jandex.IndexView;
-import org.junit.After;
-import org.junit.Before;
-
+import com.fasterxml.classmate.ResolvedType;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.metamodel.MetadataSources;
 import org.hibernate.metamodel.internal.MetadataImpl;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContextImpl;
-import org.hibernate.metamodel.internal.source.annotations.entity.EmbeddableHierarchy;
 import org.hibernate.metamodel.spi.binding.SingularAttributeBinding;
 import org.hibernate.metamodel.spi.source.EntityHierarchy;
 import org.hibernate.testing.junit4.BaseUnitTestCase;
+import org.jboss.jandex.IndexView;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * @author Hardy Ferentschik
@@ -67,14 +65,21 @@ public abstract class BaseAnnotationIndexTestCase extends BaseUnitTestCase {
 		return EntityHierarchyBuilder.createEntityHierarchies( context );
 	}
 
-	public EmbeddableHierarchy createEmbeddableHierarchy(AccessType accessType,SingularAttributeBinding.NaturalIdMutability naturalIdMutability, Class<?>... configuredClasses) {
+	public EmbeddableHierarchy createEmbeddableHierarchy(AccessType accessType, SingularAttributeBinding.NaturalIdMutability naturalIdMutability, Class<?>... configuredClasses) {
 		IndexView index = JandexHelper.indexForClass(
 				meta.getServiceRegistry().getService( ClassLoaderService.class ),
 				configuredClasses
 		);
 		AnnotationBindingContext context = new AnnotationBindingContextImpl( meta, index );
-		return EmbeddableHierarchy.createEmbeddableHierarchy( configuredClasses[0], "", accessType,
-				naturalIdMutability,null, context );
+		ResolvedType resolvedType = context.getTypeResolver().resolve( configuredClasses[0] );
+		return EmbeddableHierarchy.createEmbeddableHierarchy(
+				configuredClasses[0],
+				"",
+				resolvedType, accessType,
+				naturalIdMutability,
+				null,
+				context
+		);
 	}
 }
 

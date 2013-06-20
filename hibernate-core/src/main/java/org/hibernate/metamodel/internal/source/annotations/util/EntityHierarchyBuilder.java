@@ -32,15 +32,12 @@ import java.util.Map;
 import java.util.Set;
 import javax.persistence.AccessType;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.logging.Logger;
+import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
 
 import org.hibernate.AnnotationException;
+import org.hibernate.AssertionFailure;
+
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
 import org.hibernate.metamodel.internal.source.annotations.EntityHierarchyImpl;
@@ -53,6 +50,13 @@ import org.hibernate.metamodel.spi.binding.InheritanceType;
 import org.hibernate.metamodel.spi.source.EntityHierarchy;
 import org.hibernate.metamodel.spi.source.EntitySource;
 import org.hibernate.metamodel.spi.source.SubclassEntitySource;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 
 /**
  * Given a (jandex) annotation index build processes all classes with JPA relevant annotations and pre-orders
@@ -61,8 +65,7 @@ import org.hibernate.metamodel.spi.source.SubclassEntitySource;
  * @author Hardy Ferentschik
  */
 public class EntityHierarchyBuilder {
-	private static final Logger LOG = Logger.getLogger(
-			EntityHierarchyBuilder.class);
+	private static final Logger LOG = Logger.getLogger( EntityHierarchyBuilder.class );
 
 	private EntityHierarchyBuilder() {
 	}
@@ -102,7 +105,13 @@ public class EntityHierarchyBuilder {
 			);
 			final boolean hasSubclasses = rootClassWithAllSubclasses.size() > 1;
 
-			final List<ClassInfo> mappedSuperclasses =  findMappedSuperclasses( index, rootClassInfo );
+			// using the root entity, resolve generic parameters in the whole class hierarchy
+			final Map<String, ResolvedTypeWithMembers> resolvedTypeWithMembers = resolveGenerics(
+					rootClassInfo.toString(),
+					bindingContext
+			);
+
+			final List<ClassInfo> mappedSuperclasses = findMappedSuperclasses( index, rootClassInfo );
 
 			// the root entity might have some mapped super classes which we have to take into consideration
 			// for inheritance type and default access
@@ -118,6 +127,7 @@ public class EntityHierarchyBuilder {
 			final RootEntityClass rootEntityClass = new RootEntityClass(
 					rootClassInfo,
 					mappedSuperclasses,
+					resolvedTypeWithMembers,
 					defaultAccessType,
 					hierarchyInheritanceType,
 					hasSubclasses,
@@ -128,12 +138,12 @@ public class EntityHierarchyBuilder {
 			addSubclassEntitySources(
 					bindingContext,
 					classToDirectSubClassMap,
+					resolvedTypeWithMembers,
 					defaultAccessType,
 					hierarchyInheritanceType,
 					rootEntityClass,
 					rootSource
 			);
-
 
 			hierarchies.add( new EntityHierarchyImpl( rootSource, hierarchyInheritanceType ) );
 		}
@@ -142,6 +152,7 @@ public class EntityHierarchyBuilder {
 
 	private static void addSubclassEntitySources(AnnotationBindingContext bindingContext,
 			Map<DotName, List<ClassInfo>> classToDirectSubClassMap,
+			Map<String, ResolvedTypeWithMembers> resolvedTypeWithMembers,
 			AccessType defaultAccessType,
 			InheritanceType hierarchyInheritanceType,
 			EntityClass entityClass,
@@ -151,8 +162,13 @@ public class EntityHierarchyBuilder {
 			return;
 		}
 		for ( ClassInfo subClassInfo : subClassInfoList ) {
+			final ResolvedTypeWithMembers resolvedType = resolvedTypeWithMembers.get( subClassInfo.toString() );
+			if ( resolvedType == null ) {
+				throw new AssertionFailure( "Missing generic information for " + subClassInfo.toString() );
+			}
 			final EntityClass subclassEntityClass = new EntityClass(
 					subClassInfo,
+					resolvedType,
 					entityClass,
 					defaultAccessType,
 					hierarchyInheritanceType,
@@ -165,6 +181,7 @@ public class EntityHierarchyBuilder {
 			addSubclassEntitySources(
 					bindingContext,
 					classToDirectSubClassMap,
+					resolvedTypeWithMembers,
 					defaultAccessType,
 					hierarchyInheritanceType,
 					subclassEntityClass,
@@ -197,7 +214,8 @@ public class EntityHierarchyBuilder {
 							info.name()
 									.toString() + "'s parent class [" + clazz.getName() + "] is not added into Jandex repository"
 					);
-				}else {
+				}
+				else {
 					throw new AnnotationException(
 							info.name()
 									.toString() + "'s parent class [" + superName.toString() + "] doesn't exist in classpath"
@@ -213,7 +231,7 @@ public class EntityHierarchyBuilder {
 	}
 
 	private static List<ClassInfo> findMappedSuperclasses(IndexView index, ClassInfo info) {
-		final List<ClassInfo> mappedSuperclasses = new ArrayList<ClassInfo>(  );
+		final List<ClassInfo> mappedSuperclasses = new ArrayList<ClassInfo>();
 		DotName superName = info.superName();
 		ClassInfo tmpInfo;
 		// walk up the hierarchy until java.lang.Object
@@ -224,7 +242,7 @@ public class EntityHierarchyBuilder {
 			}
 			superName = tmpInfo.superName();
 		}
-		return  mappedSuperclasses;
+		return mappedSuperclasses;
 	}
 
 	/**
@@ -249,12 +267,6 @@ public class EntityHierarchyBuilder {
 		processedEntities.add( classInfo.name() );
 		rootClassWithAllSubclasses.add( classInfo );
 		final Collection<ClassInfo> subClasses = bindingContext.getIndex().getKnownDirectSubclasses( classInfo.name() );
-
-		// if there are no more subclasses we reached the leaf class. In order to properly resolve generics we
-		// need to resolve the type information using this leaf class
-		if ( subClasses.isEmpty() ) {
-			bindingContext.resolveAllTypes( classInfo.name().toString() );
-		}
 
 		for ( ClassInfo subClassInfo : subClasses ) {
 			if ( !isEntityClass( subClassInfo ) ) {
@@ -416,7 +428,7 @@ public class EntityHierarchyBuilder {
 	}
 
 	private static InheritanceType determineInheritanceType(ClassInfo rootClassInfo, List<ClassInfo> classes) {
-		if(classes.size() == 1) {
+		if ( classes.size() == 1 ) {
 			return InheritanceType.NO_INHERITANCE;
 		}
 
@@ -476,6 +488,24 @@ public class EntityHierarchyBuilder {
 		}
 		builder.append( "]" );
 		return builder.toString();
+	}
+
+	private static Map<String, ResolvedTypeWithMembers> resolveGenerics(String className, AnnotationBindingContext bindingContext) {
+		final Map<String, ResolvedTypeWithMembers> resolvedTypes = new HashMap<String, ResolvedTypeWithMembers>();
+		final Class<?> clazz = bindingContext.locateClassByName( className );
+		ResolvedType resolvedType = bindingContext.getTypeResolver().resolve( clazz );
+		while ( resolvedType!= null && !Object.class.equals( resolvedType.getErasedType() ) ) {
+			final ResolvedTypeWithMembers resolvedTypeWithMembers = bindingContext.getMemberResolver()
+					.resolve( resolvedType, null, null );
+			resolvedTypes.put( className, resolvedTypeWithMembers );
+
+			resolvedType = resolvedType.getParentClass();
+			if ( resolvedType != null ) {
+				className = resolvedType.getErasedType().getName();
+			}
+		}
+
+		return resolvedTypes;
 	}
 }
 

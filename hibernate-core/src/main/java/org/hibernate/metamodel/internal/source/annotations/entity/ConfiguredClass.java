@@ -38,9 +38,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import javax.persistence.AccessType;
 
+import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.ResolvedTypeWithMembers;
-import com.fasterxml.classmate.members.HierarchicType;
 import com.fasterxml.classmate.members.ResolvedMember;
+import org.hibernate.metamodel.internal.source.annotations.util.EmbeddableHierarchy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -76,7 +77,7 @@ import org.hibernate.metamodel.spi.source.MappingException;
  * @author Brett Meyer
  */
 public class ConfiguredClass {
-    private static final CoreMessageLogger LOG = Logger.getMessageLogger(CoreMessageLogger.class, AssertionFailure.class.getName());
+	private static final CoreMessageLogger LOG = Logger.getMessageLogger( CoreMessageLogger.class, AssertionFailure.class.getName() );
 
 	/**
 	 * The parent of this configured class or {@code null} in case this configured class is the root of a hierarchy.
@@ -92,6 +93,11 @@ public class ConfiguredClass {
 	 * The actual java type.
 	 */
 	private final Class<?> clazz;
+
+	/**
+	 * The generically resolved type
+	 */
+	private final ResolvedTypeWithMembers genericResolvedType;
 
 	/**
 	 * Is this class abstract?
@@ -126,14 +132,12 @@ public class ConfiguredClass {
 	/**
 	 * The embedded classes for this entity
 	 */
-	private final Map<String, EmbeddableClass> embeddedClasses
-			= new HashMap<String, EmbeddableClass>();
+	private final Map<String, EmbeddableClass> embeddedClasses;
 
 	/**
 	 * The collection element embedded classes for this entity
 	 */
-	private final Map<String, EmbeddableClass> collectionEmbeddedClasses
-			= new HashMap<String, EmbeddableClass>();
+	private final Map<String, EmbeddableClass> collectionEmbeddedClasses;
 
 	/**
 	 * A map of all attribute overrides defined in this class. The override name is "normalised", meaning as if specified
@@ -151,14 +155,25 @@ public class ConfiguredClass {
 
 	private final EntityBindingContext localBindingContext;
 
+	/**
+	 * Default constructor
+	 *
+	 * @param classInfo the Jandex {@code ClassInfo} for this mapped superclass
+	 * @param fullyResolvedType the resolved generic type information (via classmate)
+	 * @param defaultAccessType the default access type
+	 * @param parent the parent class
+	 * @param context context
+	 */
 	public ConfiguredClass(
 			ClassInfo classInfo,
+			ResolvedTypeWithMembers fullyResolvedType,
 			AccessType defaultAccessType,
 			ConfiguredClass parent,
 			AnnotationBindingContext context) {
 		this.parent = parent;
 		this.classInfo = classInfo;
 		this.clazz = context.locateClassByName( classInfo.toString() );
+		this.genericResolvedType = fullyResolvedType;
 		this.isAbstract = ReflectHelper.isAbstractClass( this.clazz );
 		this.classAccessType = determineClassAccessType( defaultAccessType );
 		this.customTuplizer = determineCustomTuplizer();
@@ -166,6 +181,8 @@ public class ConfiguredClass {
 		this.simpleAttributeMap = new TreeMap<String, BasicAttribute>();
 		this.idAttributeMap = new TreeMap<String, MappedAttribute>();
 		this.associationAttributeMap = new TreeMap<String, AssociationAttribute>();
+		this.embeddedClasses = new HashMap<String, EmbeddableClass>(  );
+		this.collectionEmbeddedClasses = new HashMap<String, EmbeddableClass>(  );
 
 		this.localBindingContext = new EntityBindingContext( context, this );
 
@@ -198,7 +215,7 @@ public class ConfiguredClass {
 	}
 
 	public boolean hostsAnnotation(DotName annotationName) {
-		List<AnnotationInstance> annotationList = classInfo.annotations().get( annotationName );
+		final List<AnnotationInstance> annotationList = classInfo.annotations().get( annotationName );
 		return CollectionHelper.isNotEmpty( annotationList );
 	}
 
@@ -275,38 +292,23 @@ public class ConfiguredClass {
 		// find transient field and method names
 		findTransientFieldAndMethodNames();
 
-		// use the class mate library to generic types
-		ResolvedTypeWithMembers resolvedType = localBindingContext.resolveMemberTypes(
-				localBindingContext.getResolvedType( clazz )
-		);
-		for ( HierarchicType hierarchicType : resolvedType.allTypesAndOverrides() ) {
-			if ( hierarchicType.getType().getErasedType().equals( clazz ) ) {
-				resolvedType = localBindingContext.resolveMemberTypes( hierarchicType.getType() );
-				break;
-			}
-		}
-
-		if ( resolvedType == null ) {
-			throw new AssertionFailure( "Unable to resolve types for " + clazz.getName() );
-		}
-
-		Set<String> explicitlyConfiguredMemberNames = createExplicitlyConfiguredAccessProperties( resolvedType );
+		final Set<String> explicitlyConfiguredMemberNames = createExplicitlyConfiguredAccessProperties( );
 
 		if ( AccessType.FIELD.equals( classAccessType ) ) {
-			Field fields[] = clazz.getDeclaredFields();
+			final Field[] fields = clazz.getDeclaredFields();
 			Field.setAccessible( fields, true );
 			for ( Field field : fields ) {
 				if ( isPersistentMember( transientFieldNames, explicitlyConfiguredMemberNames, field ) ) {
-					createMappedAttribute( field, resolvedType, AccessType.FIELD );
+					createMappedAttribute( field, AccessType.FIELD );
 				}
 			}
 		}
 		else {
-			Method[] methods = clazz.getDeclaredMethods();
+			final Method[] methods = clazz.getDeclaredMethods();
 			Method.setAccessible( methods, true );
 			for ( Method method : methods ) {
 				if ( isPersistentMember( transientMethodNames, explicitlyConfiguredMemberNames, method ) ) {
-					createMappedAttribute( method, resolvedType, AccessType.PROPERTY );
+					createMappedAttribute( method, AccessType.PROPERTY );
 				}
 			}
 		}
@@ -338,28 +340,27 @@ public class ConfiguredClass {
 	/**
 	 * Creates {@code MappedProperty} instances for the explicitly configured persistent properties
 	 *
-	 * @param resolvedMembers the resolved type parameters for this class
-	 *
 	 * @return the property names of the explicitly configured attribute names in a set
 	 */
-	private Set<String> createExplicitlyConfiguredAccessProperties(ResolvedTypeWithMembers resolvedMembers) {
-		Set<String> explicitAccessPropertyNames = new HashSet<String>();
+	private Set<String> createExplicitlyConfiguredAccessProperties() {
+		final Set<String> explicitAccessPropertyNames = new HashSet<String>();
 
 		List<AnnotationInstance> accessAnnotations = classInfo.annotations().get( JPADotNames.ACCESS );
-		List<AnnotationInstance> hibernateAccessAnnotations = classInfo.annotations().get( HibernateDotNames.ACCESS_TYPE );
+		final List<AnnotationInstance> hibernateAccessAnnotations = classInfo.annotations().get( HibernateDotNames.ACCESS_TYPE );
 		if ( accessAnnotations == null ) {
 			accessAnnotations = hibernateAccessAnnotations;
 			if ( accessAnnotations == null ) {
 				return explicitAccessPropertyNames;
 			}
-		} else if ( hibernateAccessAnnotations != null ) {
+		}
+		else if ( hibernateAccessAnnotations != null ) {
 			accessAnnotations.addAll( hibernateAccessAnnotations );
 		}
 
 		// iterate over all @Access annotations defined on the current class
 		for ( AnnotationInstance accessAnnotation : accessAnnotations ) {
 			// we are only interested at annotations defined on fields and methods
-			AnnotationTarget annotationTarget = accessAnnotation.target();
+			final AnnotationTarget annotationTarget = accessAnnotation.target();
 			if ( !( annotationTarget.getClass().equals( MethodInfo.class ) || annotationTarget.getClass()
 					.equals( FieldInfo.class ) ) ) {
 				continue;
@@ -369,7 +370,8 @@ public class ConfiguredClass {
 			if ( JPADotNames.ACCESS.equals( accessAnnotation.name() ) ) {
 				accessType = JandexHelper.getEnumValue( accessAnnotation, "value", AccessType.class );
 				checkExplicitJpaAttributeAccessAnnotationPlacedCorrectly( annotationTarget, accessType );
-			} else {
+			}
+			else {
 				accessType = AccessType.valueOf( accessAnnotation.value().asString().toUpperCase() );
 			}
 
@@ -377,30 +379,30 @@ public class ConfiguredClass {
 			Member member;
 			if ( annotationTarget instanceof MethodInfo ) {
 				try {
-					member = clazz.getMethod( ( ( MethodInfo ) annotationTarget ).name() );
+					member = clazz.getMethod( ( (MethodInfo) annotationTarget ).name() );
 				}
 				catch ( NoSuchMethodException e ) {
 					throw new HibernateException(
 							"Unable to load method "
-									+ ( ( MethodInfo ) annotationTarget ).name()
+									+ ( (MethodInfo) annotationTarget ).name()
 									+ " of class " + clazz.getName()
 					);
 				}
 			}
 			else {
 				try {
-					member = clazz.getField( ( ( FieldInfo ) annotationTarget ).name() );
+					member = clazz.getField( ( (FieldInfo) annotationTarget ).name() );
 				}
 				catch ( NoSuchFieldException e ) {
 					throw new HibernateException(
 							"Unable to load field "
-									+ ( ( FieldInfo ) annotationTarget ).name()
+									+ ( (FieldInfo) annotationTarget ).name()
 									+ " of class " + clazz.getName()
 					);
 				}
 			}
 			if ( ReflectHelper.isProperty( member ) ) {
-				createMappedAttribute( member, resolvedMembers, accessType );
+				createMappedAttribute( member, accessType );
 				explicitAccessPropertyNames.add( ReflectHelper.getPropertyName( member ) );
 			}
 		}
@@ -412,13 +414,13 @@ public class ConfiguredClass {
 		// overriding access annotations must be placed on properties AND have the access type PROPERTY
 		if ( AccessType.FIELD.equals( classAccessType ) ) {
 			if ( !MethodInfo.class.isInstance( annotationTarget ) ) {
-				String msg = LOG.accessTypeOverrideShouldBeAnnotatedOnProperty( classInfo.name().toString() );
+				final String msg = LOG.accessTypeOverrideShouldBeAnnotatedOnProperty( classInfo.name().toString() );
 				LOG.trace( msg );
 				throw new AnnotationException( msg );
 			}
 
 			if ( !AccessType.PROPERTY.equals( accessType ) ) {
-				String msg = LOG.accessTypeOverrideShouldBeProperty( classInfo.name().toString() );
+				final String msg = LOG.accessTypeOverrideShouldBeProperty( classInfo.name().toString() );
 				LOG.trace( msg );
 				throw new AnnotationException( msg );
 			}
@@ -428,40 +430,41 @@ public class ConfiguredClass {
 		// overriding access annotations must be placed on fields and have the access type FIELD
 		if ( AccessType.PROPERTY.equals( classAccessType ) ) {
 			if ( !FieldInfo.class.isInstance( annotationTarget ) ) {
-				String msg = LOG.accessTypeOverrideShouldBeAnnotatedOnField( classInfo.name().toString() );
+				final String msg = LOG.accessTypeOverrideShouldBeAnnotatedOnField( classInfo.name().toString() );
 				LOG.trace( msg );
 				throw new AnnotationException( msg );
 			}
 
 			if ( !AccessType.FIELD.equals( accessType ) ) {
-				String msg = LOG.accessTypeOverrideShouldBeField( classInfo.name().toString() );
+				final String msg = LOG.accessTypeOverrideShouldBeField( classInfo.name().toString() );
 				LOG.trace( msg );
 				throw new AnnotationException( msg );
 			}
 		}
 	}
 
-	private void createMappedAttribute(Member member, ResolvedTypeWithMembers resolvedType, AccessType accessType) {
+	private void createMappedAttribute(Member member, AccessType accessType) {
 		final String attributeName = ReflectHelper.getPropertyName( member );
-		final ResolvedMember[] resolvedMembers = Field.class.isInstance( member ) ? resolvedType.getMemberFields() : resolvedType
-				.getMemberMethods();
-		ResolvedMember resolvedMember = findResolvedMember( member.getName(), resolvedMembers );
+		final ResolvedMember[] resolvedMembers = Field.class.isInstance( member ) ?
+				genericResolvedType.getMemberFields()
+				: genericResolvedType.getMemberMethods();
+		final ResolvedMember resolvedMember = findResolvedMember( member.getName(), resolvedMembers );
 		final Map<DotName, List<AnnotationInstance>> annotations = JandexHelper.getMemberAnnotations(
 				classInfo, member.getName(), localBindingContext.getServiceRegistry()
 		);
 		Class<?> attributeType = resolvedMember.getType().getErasedType();
-		Class<?> referencedCollectionType = resolveCollectionValuedReferenceType( resolvedMember, annotations );
+		final Class<?> referencedCollectionType = resolveCollectionValuedReferenceType( resolvedMember, annotations );
 		Class<?> indexType = null;
 		if(Map.class.isAssignableFrom( attributeType )){
 			indexType = resolvedMember.getType().getTypeParameters().get( 0 ).getErasedType();
 		}
-		MappedAttribute.Nature attributeNature = determineAttributeNature(
+		final MappedAttribute.Nature attributeNature = determineAttributeNature(
 				annotations, attributeType, referencedCollectionType
 		);
-		String accessTypeString = accessType.toString().toLowerCase();
+		final String accessTypeString = accessType.toString().toLowerCase();
 		switch ( attributeNature ) {
 			case BASIC: {
-				BasicAttribute attribute = BasicAttribute.createSimpleAttribute(
+				final BasicAttribute attribute = BasicAttribute.createSimpleAttribute(
 						attributeName,
 						attributeType,
 						attributeNature,
@@ -495,6 +498,7 @@ public class ConfiguredClass {
 						getLocalBindingContext()
 				);
 				idAttributeMap.put( attributeName, attribute );
+				break;
 			}
 			case EMBEDDED: {
 				final AnnotationInstance targetAnnotation = JandexHelper.getSingleAnnotation(
@@ -506,8 +510,7 @@ public class ConfiguredClass {
 							JandexHelper.getValue( targetAnnotation, "value", String.class )
 					);
 				}
-				embeddedClasses.put( attributeName, resolveEmbeddable(
-						attributeName, attributeType, annotations ) );
+				embeddedClasses.put( attributeName, resolveEmbeddable( attributeName, attributeType, resolvedMember.getType(), annotations ) );
 				break;
 			}
 			case ONE_TO_ONE:
@@ -528,13 +531,18 @@ public class ConfiguredClass {
 				break;
 			}
 			case ELEMENT_COLLECTION_EMBEDDABLE:
-				collectionEmbeddedClasses.put( attributeName, resolveEmbeddable(
-						attributeName, referencedCollectionType, annotations ) );
-				// fall through
+				final EmbeddableClass embeddableClass = resolveEmbeddable(
+						attributeName,
+						referencedCollectionType,
+						resolvedMember.getType().getTypeBindings().getBoundType( 0 ),
+						annotations
+				);
+				collectionEmbeddedClasses.put( attributeName, embeddableClass );
+				break;
 			case ELEMENT_COLLECTION_BASIC:
 			case ONE_TO_MANY:
 			case MANY_TO_MANY: {
-				AssociationAttribute attribute = PluralAssociationAttribute.createPluralAssociationAttribute(
+				final AssociationAttribute attribute = PluralAssociationAttribute.createPluralAssociationAttribute(
 						classInfo,
 						attributeName,
 						resolvedMember.getType().getErasedType(),
@@ -552,7 +560,11 @@ public class ConfiguredClass {
 		}
 	}
 
-	private EmbeddableClass resolveEmbeddable(String attributeName, Class<?> type, Map<DotName, List<AnnotationInstance>> annotations) {
+	private EmbeddableClass resolveEmbeddable(String attributeName,
+			Class<?> type,
+			ResolvedType resolvedType,
+			Map<DotName, List<AnnotationInstance>> annotations) {
+
 		final ClassInfo embeddableClassInfo = localBindingContext.getClassInfo( type.getName() );
 		if ( embeddableClassInfo == null ) {
 			final String msg = String.format(
@@ -565,8 +577,7 @@ public class ConfiguredClass {
 			throw new AnnotationException( msg );
 		}
 
-		localBindingContext.resolveAllTypes( type.getName() );
-		AnnotationInstance naturalIdAnnotationInstance = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance naturalIdAnnotationInstance = JandexHelper.getSingleAnnotation(
 				annotations,
 				HibernateDotNames.NATURAL_ID
 		);
@@ -598,6 +609,7 @@ public class ConfiguredClass {
 		final EmbeddableHierarchy hierarchy = EmbeddableHierarchy.createEmbeddableHierarchy(
 				localBindingContext.<Object>locateClassByName( embeddableClassInfo.toString() ),
 				attributeName,
+				resolvedType,
 				classAccessType,
 				naturalIdMutability,
 				customTuplizerClass,
@@ -619,37 +631,38 @@ public class ConfiguredClass {
 			final Map<DotName,List<AnnotationInstance>> annotations,
 			final Class<?> attributeType,
 			final Class<?> referencedCollectionType ) {
-		EnumSet<MappedAttribute.Nature>  discoveredAttributeTypes = EnumSet.noneOf( MappedAttribute.Nature.class );
-		AnnotationInstance oneToOne = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ONE_TO_ONE );
+		final EnumSet<MappedAttribute.Nature>  discoveredAttributeTypes = EnumSet.noneOf( MappedAttribute.Nature.class );
+		final AnnotationInstance oneToOne = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ONE_TO_ONE );
 		if ( oneToOne != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.ONE_TO_ONE );
 		}
 
-		AnnotationInstance oneToMany = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ONE_TO_MANY );
+		final AnnotationInstance oneToMany = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ONE_TO_MANY );
 		if ( oneToMany != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.ONE_TO_MANY );
 		}
 
-		AnnotationInstance manyToOne = JandexHelper.getSingleAnnotation( annotations, JPADotNames.MANY_TO_ONE );
+		final AnnotationInstance manyToOne = JandexHelper.getSingleAnnotation( annotations, JPADotNames.MANY_TO_ONE );
 		if ( manyToOne != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.MANY_TO_ONE );
 		}
 
-		AnnotationInstance manyToMany = JandexHelper.getSingleAnnotation( annotations, JPADotNames.MANY_TO_MANY );
+		final AnnotationInstance manyToMany = JandexHelper.getSingleAnnotation( annotations, JPADotNames.MANY_TO_MANY );
 		if ( manyToMany != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.MANY_TO_MANY );
 		}
 
-		AnnotationInstance embeddedId = JandexHelper.getSingleAnnotation( annotations, JPADotNames.EMBEDDED_ID );
+		final AnnotationInstance embeddedId = JandexHelper.getSingleAnnotation( annotations, JPADotNames.EMBEDDED_ID );
 		if ( embeddedId != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.EMBEDDED_ID );
 		}
-		AnnotationInstance id = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ID );
-		AnnotationInstance embedded = JandexHelper.getSingleAnnotation( 
+		final AnnotationInstance id = JandexHelper.getSingleAnnotation( annotations, JPADotNames.ID );
+		final AnnotationInstance embedded = JandexHelper.getSingleAnnotation(
 				annotations, JPADotNames.EMBEDDED );
 		if ( embedded != null ) {
 			discoveredAttributeTypes.add( MappedAttribute.Nature.EMBEDDED );
-		} else if ( embeddedId == null ) {
+		}
+		else if ( embeddedId == null ) {
 			// For backward compatibility, we're allowing attributes of an
 			// @Embeddable type to leave off @Embedded.  Check the type's
 			// annotations.  (see HHH-7678)
@@ -663,18 +676,16 @@ public class ConfiguredClass {
 			}
 		}
 
-
-
-		AnnotationInstance elementCollection = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance elementCollection = JandexHelper.getSingleAnnotation(
 				annotations,
 				JPADotNames.ELEMENT_COLLECTION
 		);
 		if ( elementCollection != null || ( discoveredAttributeTypes.isEmpty() && CollectionHelper.isCollectionOrArray( attributeType ) )) {
-			boolean isEmbeddable = isEmbeddableType( referencedCollectionType );
+			final boolean isEmbeddable = isEmbeddableType( referencedCollectionType );
 			discoveredAttributeTypes.add( isEmbeddable? MappedAttribute.Nature.ELEMENT_COLLECTION_EMBEDDABLE : MappedAttribute.Nature.ELEMENT_COLLECTION_BASIC );
 		}
 
-		int size = discoveredAttributeTypes.size();
+		final int size = discoveredAttributeTypes.size();
 		switch ( size ) {
 			case 0:
 				return MappedAttribute.Nature.BASIC;
@@ -687,7 +698,7 @@ public class ConfiguredClass {
 
 	protected boolean isEmbeddableType(Class<?> referencedCollectionType) {
 		// class info can be null for types like string, etc where there are no annotations
-		ClassInfo classInfo = getLocalBindingContext().getIndex().getClassByName(
+		final ClassInfo classInfo = getLocalBindingContext().getIndex().getClassByName(
 				DotName.createSimple(
 						referencedCollectionType.getName()
 				)
@@ -740,9 +751,10 @@ public class ConfiguredClass {
 			return resolvedMember.getType().getArrayElementType().getErasedType();
 		}
 		if ( resolvedMember.getType().getTypeParameters().isEmpty() ) {
-			return null; // no generic at all
+			// no generic at all
+			return null;
 		}
-		Class<?> type = resolvedMember.getType().getErasedType();
+		final Class<?> type = resolvedMember.getType().getErasedType();
 		if ( Collection.class.isAssignableFrom( type ) ) {
 			return resolvedMember.getType().getTypeParameters().get( 0 ).getErasedType();
 		}
@@ -758,32 +770,32 @@ public class ConfiguredClass {
 	 * Populates the sets of transient field and method names.
 	 */
 	private void findTransientFieldAndMethodNames() {
-		List<AnnotationInstance> transientMembers = classInfo.annotations().get( JPADotNames.TRANSIENT );
+		final List<AnnotationInstance> transientMembers = classInfo.annotations().get( JPADotNames.TRANSIENT );
 		if ( transientMembers == null ) {
 			return;
 		}
 
 		for ( AnnotationInstance transientMember : transientMembers ) {
-			AnnotationTarget target = transientMember.target();
+			final AnnotationTarget target = transientMember.target();
 			if ( target instanceof FieldInfo ) {
-				transientFieldNames.add( ( ( FieldInfo ) target ).name() );
+				transientFieldNames.add( ( (FieldInfo) target ).name() );
 			}
 			else {
-				transientMethodNames.add( ( ( MethodInfo ) target ).name() );
+				transientMethodNames.add( ( (MethodInfo) target ).name() );
 			}
 		}
 	}
 
 	private Map<String, AttributeOverride> findAttributeOverrides() {
-		Map<String, AttributeOverride> attributeOverrideList
+		final Map<String, AttributeOverride> attributeOverrideList
 				= new HashMap<String, AttributeOverride>();
 
 		// Add all instances of @AttributeOverride
-		List<AnnotationInstance> attributeOverrideAnnotations = JandexHelper
-				.getAnnotations(classInfo, JPADotNames.ATTRIBUTE_OVERRIDE );
+		final List<AnnotationInstance> attributeOverrideAnnotations = JandexHelper
+				.getAnnotations( classInfo, JPADotNames.ATTRIBUTE_OVERRIDE );
 		if ( attributeOverrideAnnotations != null ) {
 			for ( AnnotationInstance annotation : attributeOverrideAnnotations ) {
-				AttributeOverride override = new AttributeOverride( 
+				final AttributeOverride override = new AttributeOverride(
 						createPathPrefix( annotation.target() ), annotation );
 				attributeOverrideList.put( 
 						override.getAttributePath(), override );
@@ -791,19 +803,22 @@ public class ConfiguredClass {
 		}
 
 		// Add all instances of @AttributeOverrides children
-		List<AnnotationInstance> attributeOverridesAnnotations = JandexHelper
-				.getAnnotations(classInfo, JPADotNames.ATTRIBUTE_OVERRIDES);
+		final List<AnnotationInstance> attributeOverridesAnnotations = JandexHelper
+				.getAnnotations( classInfo, JPADotNames.ATTRIBUTE_OVERRIDES );
 		if ( attributeOverridesAnnotations != null ) {
 			for ( AnnotationInstance attributeOverridesAnnotation : attributeOverridesAnnotations ) {
-				AnnotationInstance[] annotationInstances
+				final AnnotationInstance[] annotationInstances
 						= attributeOverridesAnnotation.value().asNestedArray();
 				for ( AnnotationInstance annotation : annotationInstances ) {
-					AttributeOverride override = new AttributeOverride( 
-							createPathPrefix( 
-									attributeOverridesAnnotation.target() ),
-									annotation );
-					attributeOverrideList.put( 
-							override.getAttributePath(), override );
+					final AttributeOverride override = new AttributeOverride(
+							createPathPrefix(
+									attributeOverridesAnnotation.target()
+							),
+							annotation
+					);
+					attributeOverrideList.put(
+							override.getAttributePath(), override
+					);
 				}
 			}
 		}
