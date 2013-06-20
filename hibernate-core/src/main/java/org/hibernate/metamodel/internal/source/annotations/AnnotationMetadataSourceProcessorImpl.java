@@ -32,7 +32,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.IndexView;
 
 import org.hibernate.AssertionFailure;
-import org.hibernate.metamodel.MetadataSources;
 import org.hibernate.metamodel.internal.MetadataImpl;
 import org.hibernate.metamodel.internal.source.annotations.global.FetchProfileProcessor;
 import org.hibernate.metamodel.internal.source.annotations.global.QueryProcessor;
@@ -43,7 +42,6 @@ import org.hibernate.metamodel.internal.source.annotations.util.HibernateDotName
 import org.hibernate.metamodel.internal.source.annotations.util.JPADotNames;
 import org.hibernate.metamodel.internal.source.annotations.util.JandexHelper;
 import org.hibernate.metamodel.internal.source.annotations.xml.PseudoJpaDotNames;
-import org.hibernate.metamodel.spi.MetadataImplementor;
 import org.hibernate.metamodel.spi.MetadataSourceProcessor;
 import org.hibernate.metamodel.spi.source.EntityHierarchy;
 import org.hibernate.metamodel.spi.source.FilterDefinitionSource;
@@ -59,18 +57,12 @@ import org.hibernate.metamodel.spi.source.TypeDescriptorSource;
  * @author Steve Ebersole
  */
 public class AnnotationMetadataSourceProcessorImpl implements MetadataSourceProcessor {
-	private final MetadataImplementor metadata;
-	private final IndexView jandexView;
 
 	private AnnotationBindingContext bindingContext;
 
 	public AnnotationMetadataSourceProcessorImpl(
 			MetadataImpl metadata,
-			MetadataSources metadataSources,
 			IndexView jandexView) {
-		this.metadata = metadata;
-		this.jandexView = jandexView;
-
 		if ( !jandexView.getAnnotations( PseudoJpaDotNames.DEFAULT_DELIMITED_IDENTIFIERS ).isEmpty() ) {
 			// todo : this needs to move to AnnotationBindingContext
 			// what happens right now is that specifying this in an orm.xml causes it to effect all orm.xmls

@@ -183,12 +183,12 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 		if ( options.getMetadataSourceProcessingOrder() == MetadataSourceProcessingOrder.HBM_FIRST ) {
 			metadataSourceProcessors = new MetadataSourceProcessor[] {
 					new HbmMetadataSourceProcessorImpl( this, metadataSources ),
-					new AnnotationMetadataSourceProcessorImpl( this, metadataSources, jandexView )
+					new AnnotationMetadataSourceProcessorImpl( this, jandexView )
 			};
 		}
 		else {
 			metadataSourceProcessors = new MetadataSourceProcessor[] {
-					new AnnotationMetadataSourceProcessorImpl( this, metadataSources, jandexView ),
+					new AnnotationMetadataSourceProcessorImpl( this, jandexView ),
 					new HbmMetadataSourceProcessorImpl( this, metadataSources )
 			};
 		}

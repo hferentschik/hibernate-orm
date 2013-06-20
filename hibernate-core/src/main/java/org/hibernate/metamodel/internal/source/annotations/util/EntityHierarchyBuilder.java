@@ -41,7 +41,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import org.hibernate.AnnotationException;
-import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
 import org.hibernate.metamodel.internal.source.annotations.EntityHierarchyImpl;
@@ -53,7 +52,6 @@ import org.hibernate.metamodel.internal.source.annotations.entity.RootEntityClas
 import org.hibernate.metamodel.spi.binding.InheritanceType;
 import org.hibernate.metamodel.spi.source.EntityHierarchy;
 import org.hibernate.metamodel.spi.source.EntitySource;
-import org.hibernate.metamodel.spi.source.MappingException;
 import org.hibernate.metamodel.spi.source.SubclassEntitySource;
 
 /**
@@ -66,6 +64,8 @@ public class EntityHierarchyBuilder {
 	private static final Logger LOG = Logger.getLogger(
 			EntityHierarchyBuilder.class);
 
+	private EntityHierarchyBuilder() {
+	}
 
 	/**
 	 * Pre-processes the annotated entities from the index and create a set of entity hierarchies which can be bound
@@ -76,11 +76,11 @@ public class EntityHierarchyBuilder {
 	 * @return a set of {@code EntityHierarchy} instances.
 	 */
 	public static Set<EntityHierarchy> createEntityHierarchies(AnnotationBindingContext bindingContext) {
-		Set<EntityHierarchy> hierarchies = new HashSet<EntityHierarchy>();
+		final Set<EntityHierarchy> hierarchies = new HashSet<EntityHierarchy>();
 
-		List<DotName> processedEntities = new ArrayList<DotName>();
-		Map<DotName, List<ClassInfo>> classToDirectSubClassMap = new HashMap<DotName, List<ClassInfo>>();
-		IndexView index = bindingContext.getIndex();
+		final List<DotName> processedEntities = new ArrayList<DotName>();
+		final Map<DotName, List<ClassInfo>> classToDirectSubClassMap = new HashMap<DotName, List<ClassInfo>>();
+		final IndexView index = bindingContext.getIndex();
 		for ( ClassInfo classInfo : index.getKnownClasses() ) {
 			if ( !isEntityClass( classInfo ) ) {
 				continue;
@@ -89,8 +89,8 @@ public class EntityHierarchyBuilder {
 			if ( processedEntities.contains( classInfo.name() ) ) {
 				continue;
 			}
-			ClassInfo rootClassInfo = findRootEntityClassInfo( index, classInfo, bindingContext );
-			List<ClassInfo> rootClassWithAllSubclasses = new ArrayList<ClassInfo>();
+			final ClassInfo rootClassInfo = findRootEntityClassInfo( index, classInfo, bindingContext );
+			final List<ClassInfo> rootClassWithAllSubclasses = new ArrayList<ClassInfo>();
 
 			// collect the current root entity and all its subclasses
 			processHierarchy(
@@ -100,22 +100,22 @@ public class EntityHierarchyBuilder {
 					processedEntities,
 					classToDirectSubClassMap
 			);
-			boolean hasSubclasses = rootClassWithAllSubclasses.size() > 1;
+			final boolean hasSubclasses = rootClassWithAllSubclasses.size() > 1;
 
-			List<ClassInfo> mappedSuperclasses =  findMappedSuperclasses( index, rootClassInfo );
+			final List<ClassInfo> mappedSuperclasses =  findMappedSuperclasses( index, rootClassInfo );
 
 			// the root entity might have some mapped super classes which we have to take into consideration
 			// for inheritance type and default access
 			rootClassWithAllSubclasses.addAll( mappedSuperclasses );
 
-			AccessType defaultAccessType = determineDefaultAccessType( rootClassWithAllSubclasses );
-			InheritanceType hierarchyInheritanceType = determineInheritanceType(
+			final AccessType defaultAccessType = determineDefaultAccessType( rootClassWithAllSubclasses );
+			final InheritanceType hierarchyInheritanceType = determineInheritanceType(
 					rootClassInfo,
 					rootClassWithAllSubclasses
 			);
 
 			// create the root entity source
-			RootEntityClass rootEntityClass = new RootEntityClass(
+			final RootEntityClass rootEntityClass = new RootEntityClass(
 					rootClassInfo,
 					mappedSuperclasses,
 					defaultAccessType,
@@ -123,7 +123,7 @@ public class EntityHierarchyBuilder {
 					hasSubclasses,
 					bindingContext
 			);
-			RootEntitySourceImpl rootSource = new RootEntitySourceImpl( rootEntityClass );
+			final RootEntitySourceImpl rootSource = new RootEntitySourceImpl( rootEntityClass );
 
 			addSubclassEntitySources(
 					bindingContext,
@@ -141,24 +141,24 @@ public class EntityHierarchyBuilder {
 	}
 
 	private static void addSubclassEntitySources(AnnotationBindingContext bindingContext,
-												 Map<DotName, List<ClassInfo>> classToDirectSubClassMap,
-												 AccessType defaultAccessType,
-												 InheritanceType hierarchyInheritanceType,
-												 EntityClass entityClass,
-												 EntitySource entitySource) {
-		List<ClassInfo> subClassInfoList = classToDirectSubClassMap.get( DotName.createSimple( entitySource.getClassName() ) );
+			Map<DotName, List<ClassInfo>> classToDirectSubClassMap,
+			AccessType defaultAccessType,
+			InheritanceType hierarchyInheritanceType,
+			EntityClass entityClass,
+			EntitySource entitySource) {
+		final List<ClassInfo> subClassInfoList = classToDirectSubClassMap.get( DotName.createSimple( entitySource.getClassName() ) );
 		if ( subClassInfoList == null ) {
 			return;
 		}
 		for ( ClassInfo subClassInfo : subClassInfoList ) {
-			EntityClass subclassEntityClass = new EntityClass(
+			final EntityClass subclassEntityClass = new EntityClass(
 					subClassInfo,
 					entityClass,
 					defaultAccessType,
 					hierarchyInheritanceType,
 					bindingContext
 			);
-			SubclassEntitySource subclassEntitySource = hierarchyInheritanceType == InheritanceType.JOINED ?
+			final SubclassEntitySource subclassEntitySource = hierarchyInheritanceType == InheritanceType.JOINED ?
 					new JoinedSubclassEntitySourceImpl( subclassEntityClass, entitySource )
 					: new SubclassEntitySourceImpl( subclassEntityClass, entitySource );
 			entitySource.add( subclassEntitySource );
@@ -191,7 +191,7 @@ public class EntityHierarchyBuilder {
 		while ( !JandexHelper.OBJECT.equals( superName ) ) {
 			tmpInfo = index.getClassByName( superName );
 			if ( tmpInfo == null && superName != null ) {
-				Class clazz = bindingContext.locateClassByName( superName.toString() );
+				final Class clazz = bindingContext.locateClassByName( superName.toString() );
 				if ( clazz != null ) {
 					throw new AnnotationException(
 							info.name()
@@ -213,7 +213,7 @@ public class EntityHierarchyBuilder {
 	}
 
 	private static List<ClassInfo> findMappedSuperclasses(IndexView index, ClassInfo info) {
-		List<ClassInfo> mappedSuperclasses = new ArrayList<ClassInfo>(  );
+		final List<ClassInfo> mappedSuperclasses = new ArrayList<ClassInfo>(  );
 		DotName superName = info.superName();
 		ClassInfo tmpInfo;
 		// walk up the hierarchy until java.lang.Object
@@ -242,13 +242,13 @@ public class EntityHierarchyBuilder {
 	 * @param classToDirectSubclassMap Create a map of class to direct subclass
 	 */
 	private static void processHierarchy(AnnotationBindingContext bindingContext,
-										 ClassInfo classInfo,
-										 List<ClassInfo> rootClassWithAllSubclasses,
-										 List<DotName> processedEntities,
-										 Map<DotName, List<ClassInfo>> classToDirectSubclassMap) {
+			ClassInfo classInfo,
+			List<ClassInfo> rootClassWithAllSubclasses,
+			List<DotName> processedEntities,
+			Map<DotName, List<ClassInfo>> classToDirectSubclassMap) {
 		processedEntities.add( classInfo.name() );
 		rootClassWithAllSubclasses.add( classInfo );
-		Collection<ClassInfo> subClasses = bindingContext.getIndex().getKnownDirectSubclasses( classInfo.name() );
+		final Collection<ClassInfo> subClasses = bindingContext.getIndex().getKnownDirectSubclasses( classInfo.name() );
 
 		// if there are no more subclasses we reached the leaf class. In order to properly resolve generics we
 		// need to resolve the type information using this leaf class
@@ -282,7 +282,7 @@ public class EntityHierarchyBuilder {
 			classToDirectSubclassMap.get( name ).add( subClassInfo );
 		}
 		else {
-			List<ClassInfo> subclassList = new ArrayList<ClassInfo>();
+			final List<ClassInfo> subclassList = new ArrayList<ClassInfo>();
 			subclassList.add( subClassInfo );
 			classToDirectSubclassMap.put( name, subclassList );
 		}
@@ -301,19 +301,19 @@ public class EntityHierarchyBuilder {
 		}
 
 		// we are only interested in building the class hierarchies for @Entity
-		AnnotationInstance jpaEntityAnnotation = JandexHelper.getSingleAnnotation( info, JPADotNames.ENTITY );
+		final AnnotationInstance jpaEntityAnnotation = JandexHelper.getSingleAnnotation( info, JPADotNames.ENTITY );
 		if ( jpaEntityAnnotation == null ) {
 			return false;
 		}
 
 		// some sanity checks
-		AnnotationInstance mappedSuperClassAnnotation = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance mappedSuperClassAnnotation = JandexHelper.getSingleAnnotation(
 				info, JPADotNames.MAPPED_SUPERCLASS
 		);
-		String className = info.toString();
+		final String className = info.toString();
 		assertNotEntityAndMappedSuperClass( jpaEntityAnnotation, mappedSuperClassAnnotation, className );
 
-		AnnotationInstance embeddableAnnotation = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance embeddableAnnotation = JandexHelper.getSingleAnnotation(
 				info, JPADotNames.EMBEDDABLE
 		);
 		assertNotEntityAndEmbeddable( jpaEntityAnnotation, embeddableAnnotation, className );
@@ -334,7 +334,7 @@ public class EntityHierarchyBuilder {
 		}
 
 		// we are only interested in building the class hierarchies for @Entity
-		AnnotationInstance mappedSuperclassAnnotation = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance mappedSuperclassAnnotation = JandexHelper.getSingleAnnotation(
 				info,
 				JPADotNames.MAPPED_SUPERCLASS
 		);
@@ -368,8 +368,8 @@ public class EntityHierarchyBuilder {
 		AccessType accessTypeByEmbeddedIdPlacement = null;
 		AccessType accessTypeByIdPlacement = null;
 		for ( ClassInfo info : classes ) {
-			List<AnnotationInstance> idAnnotations = info.annotations().get( JPADotNames.ID );
-			List<AnnotationInstance> embeddedIdAnnotations = info.annotations().get( JPADotNames.EMBEDDED_ID );
+			final List<AnnotationInstance> idAnnotations = info.annotations().get( JPADotNames.ID );
+			final List<AnnotationInstance> embeddedIdAnnotations = info.annotations().get( JPADotNames.EMBEDDED_ID );
 
 			if ( CollectionHelper.isNotEmpty( embeddedIdAnnotations ) ) {
 				accessTypeByEmbeddedIdPlacement = determineAccessTypeByIdPlacement( embeddedIdAnnotations );
@@ -426,8 +426,8 @@ public class EntityHierarchyBuilder {
 				rootClassInfo, JPADotNames.INHERITANCE
 		);
 		if ( inheritanceAnnotation != null ) {
-			String enumName = inheritanceAnnotation.value( "strategy" ).asEnum();
-			javax.persistence.InheritanceType jpaInheritanceType = Enum.valueOf(
+			final String enumName = inheritanceAnnotation.value( "strategy" ).asEnum();
+			final javax.persistence.InheritanceType jpaInheritanceType = Enum.valueOf(
 					javax.persistence.InheritanceType.class, enumName
 			);
 			inheritanceType = InheritanceType.get( jpaInheritanceType );
@@ -456,14 +456,14 @@ public class EntityHierarchyBuilder {
 	}
 
 	private static AccessType throwIdNotFoundAnnotationException(List<ClassInfo> classes) {
-		StringBuilder builder = new StringBuilder();
+		final StringBuilder builder = new StringBuilder();
 		builder.append( "Unable to determine identifier attribute for class hierarchy consisting of the classe(s) " );
 		builder.append( hierarchyListString( classes ) );
 		throw new AnnotationException( builder.toString() );
 	}
 
 	private static String hierarchyListString(List<ClassInfo> classes) {
-		StringBuilder builder = new StringBuilder();
+		final StringBuilder builder = new StringBuilder();
 		builder.append( "[" );
 
 		int count = 0;

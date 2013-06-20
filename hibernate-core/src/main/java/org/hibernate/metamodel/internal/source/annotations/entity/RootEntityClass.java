@@ -35,7 +35,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import org.hibernate.AnnotationException;
-import org.hibernate.MappingException;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.collections.CollectionHelper;
 import org.hibernate.internal.util.collections.JoinedIterable;
@@ -96,7 +95,7 @@ public class RootEntityClass extends EntityClass {
 		super( classInfo, null, hierarchyAccessType, inheritanceType, context );
 		this.mappedSuperclasses = new ArrayList<MappedSuperclass>();
 		for ( ClassInfo mappedSuperclassInfo : mappedSuperclasses ) {
-			MappedSuperclass configuredClass = new MappedSuperclass(
+			final MappedSuperclass configuredClass = new MappedSuperclass(
 					mappedSuperclassInfo,
 					null,
 					hierarchyAccessType,
@@ -145,8 +144,8 @@ public class RootEntityClass extends EntityClass {
 		return isDiscriminatorIncludedInSql;
 	}
 
-	protected List<PrimaryKeyJoinColumn> determinPrimaryKeyJoinColumns() {
-		List<PrimaryKeyJoinColumn> results = super.determinPrimaryKeyJoinColumns();
+	protected List<PrimaryKeyJoinColumn> determinePrimaryKeyJoinColumns() {
+		final List<PrimaryKeyJoinColumn> results = super.determinePrimaryKeyJoinColumns();
 		if ( CollectionHelper.isNotEmpty( results ) ) {
 			LOG.invalidPrimaryKeyJoinColumnAnnotation();
 		}
@@ -155,7 +154,7 @@ public class RootEntityClass extends EntityClass {
 
 	@Override
 	public Collection<BasicAttribute> getSimpleAttributes() {
-		List<BasicAttribute> attributes = new ArrayList<BasicAttribute>();
+		final List<BasicAttribute> attributes = new ArrayList<BasicAttribute>();
 
 		// add the attributes defined on this entity directly
 		attributes.addAll( super.getSimpleAttributes() );
@@ -170,7 +169,7 @@ public class RootEntityClass extends EntityClass {
 
 	@Override
 	public Iterable<AssociationAttribute> getAssociationAttributes() {
-		List<Iterable<AssociationAttribute>> list = new ArrayList<Iterable<AssociationAttribute>>(  );
+		final List<Iterable<AssociationAttribute>> list = new ArrayList<Iterable<AssociationAttribute>>(  );
 		list.add( super.getAssociationAttributes() );
 
 		// now the attributes of the mapped superclasses
@@ -182,7 +181,7 @@ public class RootEntityClass extends EntityClass {
 	}
 
 	public Collection<MappedAttribute> getIdAttributes() {
-		List<MappedAttribute> attributes = new ArrayList<MappedAttribute>();
+		final List<MappedAttribute> attributes = new ArrayList<MappedAttribute>();
 
 		// get all id attributes defined on this entity
 		attributes.addAll( super.getIdAttributes() );
@@ -205,13 +204,13 @@ public class RootEntityClass extends EntityClass {
 	}
 
 	private IdType determineIdType() {
-		Collection<MappedAttribute> idAttributes = getIdAttributes();
-		int size = idAttributes.size();
+		final Collection<MappedAttribute> idAttributes = getIdAttributes();
+		final int size = idAttributes.size();
 		switch ( size ){
 			case 0:
 				return IdType.NONE;
 			case 1:
-				MappedAttribute idAttribute = idAttributes.iterator().next();
+				final MappedAttribute idAttribute = idAttributes.iterator().next();
 				switch ( idAttribute.getNature() ){
 					case BASIC:
 						return IdType.SIMPLE;
@@ -224,7 +223,7 @@ public class RootEntityClass extends EntityClass {
 	}
 
 	private List<AnnotationInstance> findIdAnnotations(DotName idAnnotationType) {
-		List<AnnotationInstance> idAnnotationList = new ArrayList<AnnotationInstance>();
+		final List<AnnotationInstance> idAnnotationList = new ArrayList<AnnotationInstance>();
 
 		// check the class itself
 		if ( getClassInfo().annotations().containsKey( idAnnotationType ) ) {
@@ -254,13 +253,13 @@ public class RootEntityClass extends EntityClass {
 
 		Class<?> type = String.class; // string is the discriminator default
 		if ( discriminatorFormulaAnnotation != null ) {
-			String expression = JandexHelper.getValue( discriminatorFormulaAnnotation, "value", String.class );
+			final String expression = JandexHelper.getValue( discriminatorFormulaAnnotation, "value", String.class );
 			discriminatorFormula = new FormulaValue( null, expression );
 		}
 		discriminatorColumnValues = new Column( null ); //(stliu) give null here, will populate values below
 		discriminatorColumnValues.setNullable( false ); // discriminator column cannot be null
 		if ( discriminatorColumnAnnotation != null ) {
-			DiscriminatorType discriminatorType = JandexHelper.getEnumValue( 
+			final DiscriminatorType discriminatorType = JandexHelper.getEnumValue(
 					discriminatorColumnAnnotation,
 					"discriminatorType", DiscriminatorType.class );
 			switch ( discriminatorType ) {
@@ -305,7 +304,7 @@ public class RootEntityClass extends EntityClass {
 		}
 		discriminatorType = type;
 
-		AnnotationInstance discriminatorOptionsAnnotation = JandexHelper.getSingleAnnotation(
+		final AnnotationInstance discriminatorOptionsAnnotation = JandexHelper.getSingleAnnotation(
 				getClassInfo(), HibernateDotNames.DISCRIMINATOR_OPTIONS
 		);
 		if ( discriminatorOptionsAnnotation != null ) {

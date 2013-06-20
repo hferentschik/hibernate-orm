@@ -25,9 +25,8 @@ package org.hibernate.metamodel.internal.source.annotations.entity;
 
 import javax.persistence.AccessType;
 
-import org.jboss.jandex.ClassInfo;
-
 import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingContext;
+import org.jboss.jandex.ClassInfo;
 
 /**
  * Represents the information about an entity annotated with {@code @MappedSuperclass}.
@@ -35,6 +34,14 @@ import org.hibernate.metamodel.internal.source.annotations.AnnotationBindingCont
  * @author Hardy Ferentschik
  */
 public class MappedSuperclass extends ConfiguredClass {
+	/**
+	 * Default constructor
+	 *
+	 * @param classInfo the Jandex {@code ClassInfo} for this mapped superclass
+	 * @param parent the parent class
+	 * @param defaultAccessType the default access type
+	 * @param context context
+	 */
 	public MappedSuperclass(
 			ClassInfo classInfo,
 			ConfiguredClass parent,

@@ -69,12 +69,11 @@ public class AssertSourcesTest extends BaseUnitTestCase {
 		MetadataSourceProcessor hbmProcessor = new HbmMetadataSourceProcessorImpl( buildMetadata( hbm ), hbm );
 		testUserEntitySources( hbmProcessor );
 
-		MetadataSources ann = new MetadataSources( serviceRegistry );
-		ann.addAnnotatedClass( User.class );
+		MetadataSources metadataSources = new MetadataSources( serviceRegistry );
+		metadataSources.addAnnotatedClass( User.class );
 		MetadataSourceProcessor annProcessor = new AnnotationMetadataSourceProcessorImpl(
-				buildMetadata( ann ),
-				ann,
-				ann.buildJandexView()
+				buildMetadata( metadataSources ),
+				metadataSources.buildJandexView()
 		);
 		testUserEntitySources( annProcessor );
 	}
@@ -172,14 +171,13 @@ public class AssertSourcesTest extends BaseUnitTestCase {
 
 	@Test
 	public void testOrderEntitySources() {
-		MetadataSources ann = new MetadataSources( serviceRegistry );
-		ann.addAnnotatedClass( Order.class );
-		ann.addAnnotatedClass( Order.class );
-		ann.addAnnotatedClass( Order.OrderPk.class );
+		MetadataSources metadataSources = new MetadataSources( serviceRegistry );
+		metadataSources.addAnnotatedClass( Order.class );
+		metadataSources.addAnnotatedClass( Order.class );
+		metadataSources.addAnnotatedClass( Order.OrderPk.class );
 		MetadataSourceProcessor annProcessor = new AnnotationMetadataSourceProcessorImpl(
-				buildMetadata( ann ),
-				ann,
-				ann.buildJandexView()
+				buildMetadata( metadataSources ),
+				metadataSources.buildJandexView()
 		);
 		testOrderEntitySources( annProcessor );
 	}
@@ -201,14 +199,13 @@ public class AssertSourcesTest extends BaseUnitTestCase {
 
 	@Test
 	public void testOrderNonAggregatedEntitySources() {
-		MetadataSources ann = new MetadataSources( serviceRegistry );
-		ann.addAnnotatedClass( Order.class );
-		ann.addAnnotatedClass( Order.class );
-		ann.addAnnotatedClass( Order.OrderPk.class );
+		MetadataSources metadataSources = new MetadataSources( serviceRegistry );
+		metadataSources.addAnnotatedClass( Order.class );
+		metadataSources.addAnnotatedClass( Order.class );
+		metadataSources.addAnnotatedClass( Order.OrderPk.class );
 		MetadataSourceProcessor annProcessor = new AnnotationMetadataSourceProcessorImpl(
-				buildMetadata( ann ),
-				ann,
-				ann.buildJandexView()
+				buildMetadata( metadataSources ),
+				metadataSources.buildJandexView()
 		);
 		testOrderNonAggregatedEntitySources( annProcessor );
 	}

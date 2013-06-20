@@ -145,7 +145,7 @@ public class EntityClass extends ConfiguredClass {
 				HibernateDotNames.FOREIGN_KEY,
 				ClassInfo.class
 		);
-		this.joinedSubclassPrimaryKeyJoinColumnSources = determinPrimaryKeyJoinColumns();
+		this.joinedSubclassPrimaryKeyJoinColumnSources = determinePrimaryKeyJoinColumns();
 		if ( foreignKey != null ) {
 			ensureJoinedSubEntity();
 			explicitForeignKeyName = JandexHelper.getValue( foreignKey, "name", String.class );
@@ -310,7 +310,7 @@ public class EntityClass extends ConfiguredClass {
 		return JandexHelper.getValue( jpaEntityAnnotation, "name", String.class );
 	}
 
-	protected List<PrimaryKeyJoinColumn> determinPrimaryKeyJoinColumns() {
+	protected List<PrimaryKeyJoinColumn> determinePrimaryKeyJoinColumns() {
 		final AnnotationInstance primaryKeyJoinColumns = JandexHelper.getSingleAnnotation(
 				getClassInfo(),
 				JPADotNames.PRIMARY_KEY_JOIN_COLUMNS,
