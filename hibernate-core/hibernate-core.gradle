@@ -1,5 +1,5 @@
 apply plugin: 'antlr'
-apply plugin: 'hibernate-matrix-testing'
+//apply plugin: 'hibernate-matrix-testing'
 
 apply plugin: 'version-injection'
 
