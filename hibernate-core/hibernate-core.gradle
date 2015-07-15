@@ -5,7 +5,7 @@
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 apply plugin: 'antlr'
-apply plugin: 'hibernate-matrix-testing'
+//apply plugin: 'hibernate-matrix-testing'
 
 apply plugin: 'version-injection'
 apply plugin: 'org.hibernate.build.gradle.xjc'
@@ -45,7 +45,8 @@ dependencies {
 
     testRuntime( 'jaxen:jaxen:1.1' )
     testRuntime( libraries.javassist )
-    testRuntime( libraries.unified_el )
+    testRuntime( libraries.expression_language_api )
+    testRuntime( libraries.expression_language_impl )
 }
 
 mavenPom {
