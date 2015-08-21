@@ -6,7 +6,6 @@
  */
 package org.hibernate.jpamodelgen;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -125,15 +124,22 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		}
 
 		Set<? extends Element> elements = roundEnvironment.getRootElements();
-		for ( Element element : elements ) {
-			if ( isJPAEntity( element ) ) {
-				context.logMessage( Diagnostic.Kind.OTHER, "Processing annotated class " + element.toString() );
-				handleRootElementAnnotationMirrors( element );
-			}
-		}
+		processElements( elements );
 
 		createMetaModelClasses();
 		return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
+	}
+
+	private void processElements(Collection<? extends Element> elements) {
+		for ( Element element : elements ) {
+			if ( isJPAEntity( element ) ) {
+				context.logMessage( Diagnostic.Kind.OTHER, "Processing annotated class " + element.toString() );
+				handleElementAnnotationMirrors( element );
+			}
+
+			// handle inner classes
+			processElements( element.getEnclosedElements() );
+		}
 	}
 
 	private void createMetaModelClasses() {
@@ -218,7 +224,7 @@ public class JPAMetaModelEntityProcessor extends AbstractProcessor {
 		);
 	}
 
-	private void handleRootElementAnnotationMirrors(final Element element) {
+	private void handleElementAnnotationMirrors(final Element element) {
 		List<? extends AnnotationMirror> annotationMirrors = element.getAnnotationMirrors();
 		for ( AnnotationMirror mirror : annotationMirrors ) {
 			if ( !ElementKind.CLASS.equals( element.getKind() ) ) {
